@@ -6,7 +6,6 @@ import AuthForm from './components/auth/AuthForm';
 const App: React.FC = () => {
   const [authorized, setAuthorized] = useState(false);
 
-  // in real app, we'd check some auth token
   if (!authorized) {
     return <AuthForm onLogin={() => setAuthorized(true)} />;
   }

@@ -13,13 +13,11 @@ const SettingsPanel: React.FC = () => {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  // Apply theme to document body
   useEffect(() => {
     document.body.className = theme;
   }, [theme]);
 
   const handleSave = () => {
-    // Store settings in localStorage
     localStorage.setItem('settings', JSON.stringify({
       model,
       temperature,
