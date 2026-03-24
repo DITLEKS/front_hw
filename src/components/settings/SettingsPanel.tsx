@@ -13,27 +13,33 @@ const SettingsPanel: React.FC = () => {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
+  // Загрузить сохраненные настройки при монтировании
   useEffect(() => {
-    document.body.className = theme;
-  }, [theme]);
+    const savedSettings = localStorage.getItem('settings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setModel(settings.model || 'GigaChat');
+      setTemperature(settings.temperature ?? 1);
+      setTopP(settings.topP ?? 1);
+      setMaxTokens(settings.maxTokens ?? 1000);
+      setSystemPrompt(settings.systemPrompt || '');
+      setTheme(settings.theme || 'light');
+      document.body.className = settings.theme || 'light';
+    }
+  }, []);
 
   const handleSave = () => {
-    localStorage.setItem('settings', JSON.stringify({
+    const settings = {
       model,
       temperature,
       topP,
       maxTokens,
       systemPrompt,
       theme,
-    }));
-    console.log('save', {
-      model,
-      temperature,
-      topP,
-      maxTokens,
-      systemPrompt,
-      theme,
-    });
+    };
+    localStorage.setItem('settings', JSON.stringify(settings));
+    document.body.className = theme;
+    console.log('Настройки сохранены:', settings);
   };
 
   const handleReset = () => {
