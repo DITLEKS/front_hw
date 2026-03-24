@@ -1,17 +1,20 @@
 import React from 'react';
 import Message from './Message';
-import { ChatMessage } from '../../types/chat';
+import TypingIndicator from './TypingIndicator';
+import { Message as MessageType } from '../../types/message';
 
 interface MessageListProps {
-  messages: ChatMessage[];
+  messages: MessageType[];
+  isLoading: boolean;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   return (
     <div className="message-list">
       {messages.map((m) => (
         <Message key={m.id} message={m} />
       ))}
+      <TypingIndicator isVisible={isLoading} />
     </div>
   );
 };

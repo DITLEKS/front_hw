@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ChatMessage } from '../../types/chat';
+import { Message as MessageType } from '../../types/message';
 
 interface MessageProps {
-  message: ChatMessage;
+  message: MessageType;
 }
 
 const Message: React.FC<MessageProps> = ({ message }) => {

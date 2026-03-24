@@ -1,6 +1,11 @@
 import React, { useState, useRef, KeyboardEvent } from 'react';
 
-const InputArea: React.FC = () => {
+interface InputAreaProps {
+  onSend: (content: string) => Promise<void>;
+  isLoading: boolean;
+}
+
+const InputArea: React.FC<InputAreaProps> = ({ onSend, isLoading }) => {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -12,13 +17,17 @@ const InputArea: React.FC = () => {
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleSend = async () => {
+    if (value.trim() && !isLoading) {
+      await onSend(value.trim());
+      setValue('');
+    }
+  };
+
+  const handleKeyDown = async (e: KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (value.trim()) {
-        console.log('send', value);
-        setValue('');
-      }
+      await handleSend();
     }
   };
 
@@ -33,15 +42,16 @@ const InputArea: React.FC = () => {
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         style={{ resize: 'none', overflow: 'hidden' }}
+        disabled={isLoading}
       />
       <div className="controls">
-        <button className="attach" aria-label="Attach image">
+        <button className="attach" aria-label="Attach image" disabled={isLoading}>
           📎
         </button>
         <button className="stop" disabled>
           Остановить
         </button>
-        <button className="send" disabled={!value.trim()}>
+        <button className="send" disabled={!value.trim() || isLoading} onClick={handleSend}>
           Отправить
         </button>
       </div>
