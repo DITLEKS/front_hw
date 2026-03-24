@@ -16,6 +16,24 @@
 
 - Node.js (версия 18 или выше)
 - npm
+- GigaChat API токен (см. ниже)
+
+### Получение GigaChat API токена
+
+1. Перейдите на [личный кабинет GigaChat](https://developers.sber.ru/studio/adm-console)
+2. В разделе "API ключи" создайте новый ключ
+3. Скопируйте полученный токен (он выглядит как длинная строка в формате Base64)
+4. Создайте файл `.env` в корне проекта:
+
+```bash
+cp .env.example .env
+```
+
+5. Откройте `.env` и замените `your_gigachat_token_here` на ваш токен:
+
+```env
+GIGACHAT_TOKEN=ваш_токен_здесь
+```
 
 ### Установка зависимостей
 
@@ -46,9 +64,10 @@ npm start
 ### Использование
 
 1. Откройте браузер и перейдите по адресу http://localhost:3000 (или 3002)
-2. Введите сообщение в поле ввода
-3. Нажмите Enter или кнопку "Отправить"
-4. Дождитесь ответа от GigaChat
+2. Выполните вход в приложение
+3. Введите сообщение в поле ввода
+4. Нажмите Enter или кнопку "Отправить"
+5. Дождитесь ответа от GigaChat
 
 ## Структура проекта
 
@@ -56,21 +75,31 @@ npm start
 src/
 ├── components/
 │   ├── chat/
-│   │   ├── ChatWindow.tsx    # Главный компонент чата
-│   │   ├── MessageList.tsx   # Список сообщений
-│   │   ├── Message.tsx       # Компонент сообщения
-│   │   ├── InputArea.tsx     # Поле ввода
-│   │   └── TypingIndicator.tsx # Индикатор печати
+│   │   ├── ChatWindow.tsx       # Главный компонент чата
+│   │   ├── MessageList.tsx      # Список сообщений
+│   │   ├── Message.tsx          # Компонент сообщения
+│   │   ├── InputArea.tsx        # Поле ввода
+│   │   └── TypingIndicator.tsx  # Индикатор печати
+│   ├── sidebar/
+│   │   ├── Sidebar.tsx          # Боковая панель
+│   │   ├── ChatList.tsx         # Список чатов
+│   │   ├── ChatItem.tsx         # Элемент чата
+│   │   └── SearchInput.tsx      # Поле поиска
 │   ├── layout/
-│   │   └── AppLayout.tsx     # Макет приложения
-│   └── settings/
-│       └── SettingsPanel.tsx # Панель настроек
+│   │   └── AppLayout.tsx        # Макет приложения
+│   ├── auth/
+│   │   └── AuthForm.tsx         # Форма входа
+│   ├── settings/
+│   │   └── SettingsPanel.tsx    # Панель настроек
+│   └── ui/
+│       ├── EmptyState.tsx       # Пустое состояние
+│       └── ErrorMessage.tsx     # Сообщение об ошибке
 ├── types/
-│   ├── message.ts            # Типы сообщений
-│   └── chat.ts               # Типы чата
-└── mocks/
-    ├── chats.ts              # Моковые данные чатов
-    └── messages.ts           # Моковые сообщения
+│   ├── message.ts               # Типы сообщений
+│   ├── chat.ts                  # Типы чата
+│   └── settings.ts              # Типы настроек
+└── styles/
+    └── theme.css                # Стили приложения
 ```
 
 ## API
