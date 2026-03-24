@@ -2,12 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const https = require('https');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const GIGACHAT_TOKEN = 'MDE5ZDFlOTctODlmZC03NTE0LWI4ZjEtNTlkZjFkY2VkMzhlOmVmN2FiNDM2LTA5NmUtNDJhZC04NzRkLTYwNmEwMmViZmJkMw==';
+const GIGACHAT_TOKEN = process.env.GIGACHAT_TOKEN;
 
 let accessToken = null;
 let tokenExpiresAt = 0;

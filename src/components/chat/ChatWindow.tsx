@@ -5,8 +5,6 @@ import TypingIndicator from './TypingIndicator';
 import SettingsPanel from '../settings/SettingsPanel';
 import { Message } from '../../types/message';
 
-const GIGACHAT_TOKEN = 'MDE5ZDFlOTctODlmZC03NTE0LWI4ZjEtNTlkZjFkY2VkMzhlOmVmN2FiNDM2LTA5NmUtNDJhZC04NzRkLTYwNmEwMmViZmJkMw==';
-
 const ChatWindow: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
