@@ -95,6 +95,19 @@ const ChatWindow: React.FC = () => {
     }
   }, [messages]);
 
+  const handleStop = () => {
+    setIsLoading(false);
+    setMessages(prev => [
+      ...prev,
+      {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: 'Генерация остановлена.',
+        timestamp: new Date(),
+      },
+    ]);
+  };
+
   return (
     <div className="chat-window">
       <div className="chat-header">
@@ -112,7 +125,7 @@ const ChatWindow: React.FC = () => {
         <div ref={scrollRef} />
       </div>
 
-      <InputArea onSend={handleSend} isLoading={isLoading} />
+      <InputArea onSend={handleSend} isLoading={isLoading} onStop={handleStop} />
 
       {showSettings && (
         <div className="settings-modal" onClick={() => setShowSettings(false)}>

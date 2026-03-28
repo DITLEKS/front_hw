@@ -8,12 +8,21 @@ interface MessageProps {
 
 const Message: React.FC<MessageProps> = ({ message }) => {
   const [hover, setHover] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const variant = message.role === 'user' ? 'user' : 'assistant';
   const senderLabel = message.role === 'user' ? 'Вы' : 'GigaChat';
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(message.content);
+  const handleCopy = async () => {
+    if (!navigator.clipboard) return;
+
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Copy failed', error);
+    }
   };
 
   return (
@@ -25,14 +34,17 @@ const Message: React.FC<MessageProps> = ({ message }) => {
       <div className="message-bubble">
         <div className="message-header">
           <span className="sender">{senderLabel}</span>
-          <button
-            className={`copy-btn ${hover ? 'visible' : ''}`}
-            onClick={handleCopy}
-            aria-label="Copy message"
-            title="Скопировать"
-          >
-            📋
-          </button>
+          {variant === 'assistant' && (
+            <button
+              className={`copy-btn ${hover ? 'visible' : ''}`}
+              onClick={handleCopy}
+              aria-label="Copy message"
+              title="Скопировать"
+              type="button"
+            >
+              {copied ? '✅ Скопировано' : '📋'}
+            </button>
+          )}
         </div>
         <div className="message-content">
           <ReactMarkdown>{message.content}</ReactMarkdown>

@@ -3,9 +3,10 @@ import React, { useState, useRef, KeyboardEvent } from 'react';
 interface InputAreaProps {
   onSend: (content: string) => Promise<void>;
   isLoading: boolean;
+  onStop: () => void;
 }
 
-const InputArea: React.FC<InputAreaProps> = ({ onSend, isLoading }) => {
+const InputArea: React.FC<InputAreaProps> = ({ onSend, isLoading, onStop }) => {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -21,10 +22,13 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, isLoading }) => {
     if (value.trim() && !isLoading) {
       await onSend(value.trim());
       setValue('');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     }
   };
 
-  const handleKeyDown = async (e: KeyboardEvent) => {
+  const handleKeyDown = async (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       await handleSend();
@@ -41,19 +45,26 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, isLoading }) => {
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        style={{ resize: 'none', overflow: 'hidden' }}
         disabled={isLoading}
       />
       <div className="controls">
         <button className="attach" aria-label="Attach image" disabled={isLoading}>
           📎
         </button>
-        <button className="stop" disabled>
-          Остановить
-        </button>
-        <button className="send" disabled={!value.trim() || isLoading} onClick={handleSend}>
-          Отправить
-        </button>
+        {isLoading ? (
+          <button className="stop" onClick={onStop} type="button">
+            Стоп
+          </button>
+        ) : (
+          <button
+            className="send"
+            disabled={!value.trim() || isLoading}
+            onClick={handleSend}
+            type="button"
+          >
+            Отправить
+          </button>
+        )}
       </div>
     </div>
   );

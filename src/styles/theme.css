@@ -8,7 +8,7 @@
   --color-shadow: rgba(0, 0, 0, 0.1);
 }
 
-body.light {
+html[data-theme='light'], body.light {
   --color-bg: #f8f9fa;
   --color-text: #1a1a1a;
   --color-secondary: #e2e8f0;
@@ -16,7 +16,7 @@ body.light {
   --color-shadow: rgba(0, 0, 0, 0.1);
 }
 
-body.dark {
+html[data-theme='dark'], body.dark {
   --color-bg: #0f172a;
   --color-text: #f0f0f0;
   --color-secondary: #1e293b;
@@ -130,7 +130,8 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: white;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .new-chat {
@@ -587,6 +588,28 @@ body {
 .input-area .attach {
   padding: 8px 10px;
   font-size: 16px;
+}
+
+.top-controls {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.theme-toggle {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-secondary);
+  color: var(--color-text);
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.theme-toggle:hover {
+  background: rgba(99, 102, 241, 0.15);
 }
 
 /* error and empty states */

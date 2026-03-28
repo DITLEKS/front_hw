@@ -1,39 +1,36 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ChatItem from './ChatItem';
 import { Chat } from '../../types/chat';
 
-const ChatList: React.FC = () => {
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+interface ChatListProps {
+  chats: Chat[];
+  activeId: string | null;
+  onSelect: (chat: Chat) => void;
+  onEdit: (chat: Chat) => void;
+  onDelete: (chat: Chat) => void;
+}
 
-  const handleSelect = (chat: Chat) => {
-    setActiveId(chat.id);
-  };
-
-  const handleEdit = (chat: Chat) => {
-    console.log('edit', chat.id);
-  };
-
-  const handleDelete = (chat: Chat) => {
-    console.log('delete', chat.id);
-  };
+const ChatList: React.FC<ChatListProps> = ({ chats, activeId, onSelect, onEdit, onDelete }) => {
+  if (chats.length === 0) {
+    return (
+      <div className="chat-list">
+        <div className="empty-chats">Нет чатов</div>
+      </div>
+    );
+  }
 
   return (
     <div className="chat-list">
-      {chats.length === 0 ? (
-        <div className="empty-chats">Нет чатов</div>
-      ) : (
-        chats.map((chat) => (
-          <ChatItem
-            key={chat.id}
-            chat={chat}
-            active={chat.id === activeId}
-            onClick={() => handleSelect(chat)}
-            onEdit={() => handleEdit(chat)}
-            onDelete={() => handleDelete(chat)}
-          />
-        ))
-      )}
+      {chats.map((chat) => (
+        <ChatItem
+          key={chat.id}
+          chat={chat}
+          active={chat.id === activeId}
+          onClick={() => onSelect(chat)}
+          onEdit={() => onEdit(chat)}
+          onDelete={() => onDelete(chat)}
+        />
+      ))}
     </div>
   );
 };
