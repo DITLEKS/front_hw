@@ -1,21 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
 import TypingIndicator from './TypingIndicator';
 import SettingsPanel from '../settings/SettingsPanel';
+import { useChatStore } from '../../stores/chatStore';
 import { Message } from '../../types/message';
 
-const ChatWindow: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+interface ChatWindowProps {
+  chatId?: string;
+}
+
+const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
+  const { id: urlChatId } = useParams<{ id: string }>();
+  const chatId = propChatId || urlChatId;
+
+  const { chats, activeChatId, addMessage, setLoading, setError, generateChatName, setActiveChat } = useChatStore();
   const [showSettings, setShowSettings] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const chat = chats.find(c => c.id === chatId);
+  const messages = chat?.messages || [];
+  const isLoading = useChatStore(state => state.isLoading);
+
+  useEffect(() => {
+    if (chatId && chatId !== activeChatId) {
+      setActiveChat(chatId);
+    }
+  }, [chatId, activeChatId, setActiveChat]);
+
   const getAccessToken = async (): Promise<string> => {
     if (accessToken) return accessToken;
 
-    const response = await fetch('http://localhost:3001/api/oauth', {
+    const response = await fetch('http://localhost:3002/api/oauth', {
       method: 'POST',
     });
 
@@ -30,7 +48,7 @@ const ChatWindow: React.FC = () => {
   };
 
   const sendMessageToGigaChat = async (messagesForAPI: { role: string; content: string }[]): Promise<string> => {
-    const response = await fetch('http://localhost:3001/api/chat', {
+    const response = await fetch('http://localhost:3002/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -51,14 +69,16 @@ const ChatWindow: React.FC = () => {
   };
 
   const handleSend = async (content: string) => {
+    if (!chatId) return;
+
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
       role: 'user',
       content,
       timestamp: new Date(),
     };
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
+    addMessage(chatId, userMessage);
+    setLoading(true);
 
     try {
       const messagesForAPI = [...messages, userMessage].map(m => ({
@@ -74,7 +94,12 @@ const ChatWindow: React.FC = () => {
         content: assistantContent,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      addMessage(chatId, assistantMessage);
+
+      // Generate name if first message
+      if (messages.length === 0) {
+        generateChatName(chatId);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
@@ -83,9 +108,10 @@ const ChatWindow: React.FC = () => {
         content: 'Извините, произошла ошибка при обработке вашего сообщения.',
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      addMessage(chatId, errorMessage);
+      setError('Ошибка при отправке сообщения');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -96,22 +122,17 @@ const ChatWindow: React.FC = () => {
   }, [messages]);
 
   const handleStop = () => {
-    setIsLoading(false);
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `msg-${Date.now()}`,
-        role: 'assistant',
-        content: 'Генерация остановлена.',
-        timestamp: new Date(),
-      },
-    ]);
+    setLoading(false);
   };
+
+  if (!chat) {
+    return <div className="chat-window">Чат не найден</div>;
+  }
 
   return (
     <div className="chat-window">
       <div className="chat-header">
-        <h2>Чат</h2>
+        <h2>{chat.name}</h2>
         <button
           className="settings-button"
           onClick={() => setShowSettings(true)}

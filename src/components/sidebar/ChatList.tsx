@@ -5,9 +5,9 @@ import { Chat } from '../../types/chat';
 interface ChatListProps {
   chats: Chat[];
   activeId: string | null;
-  onSelect: (chat: Chat) => void;
-  onEdit: (chat: Chat) => void;
-  onDelete: (chat: Chat) => void;
+  onSelect: (chatId: string) => void;
+  onEdit: (chatId: string) => void;
+  onDelete: (chatId: string) => void;
 }
 
 const ChatList: React.FC<ChatListProps> = ({ chats, activeId, onSelect, onEdit, onDelete }) => {
@@ -26,9 +26,9 @@ const ChatList: React.FC<ChatListProps> = ({ chats, activeId, onSelect, onEdit, 
           key={chat.id}
           chat={chat}
           active={chat.id === activeId}
-          onClick={() => onSelect(chat)}
-          onEdit={() => onEdit(chat)}
-          onDelete={() => onDelete(chat)}
+          onClick={() => onSelect(chat.id)}
+          onEdit={() => onEdit(chat.id)}
+          onDelete={() => onDelete(chat.id)}
         />
       ))}
     </div>

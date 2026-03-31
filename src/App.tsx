@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import AppLayout from './components/layout/AppLayout';
-import ChatWindow from './components/chat/ChatWindow';
+import { BrowserRouter } from 'react-router-dom';
+import AppRoutes from './app/router/routes';
 import AuthForm from './components/auth/AuthForm';
 import Toggle from './components/ui/Toggle';
 
@@ -23,12 +23,12 @@ const App: React.FC = () => {
   }
 
   return (
-    <AppLayout>
+    <BrowserRouter>
       <div className="top-controls">
         <Toggle theme={theme} onToggle={toggleTheme} />
       </div>
-      <ChatWindow />
-    </AppLayout>
+      <AppRoutes />
+    </BrowserRouter>
   );
 };
 
