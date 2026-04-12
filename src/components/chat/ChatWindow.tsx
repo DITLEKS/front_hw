@@ -7,7 +7,7 @@ import ErrorBoundary from '../ui/ErrorBoundary';
 import { useChatStore } from '../../stores/chatStore';
 import { Message } from '../../types/message';
 
-// Ленивая загрузка SettingsPanel — открывается редко
+// Ленивая загрузка SettingsPanel
 const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
 
 interface ChatWindowProps {
