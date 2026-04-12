@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Chat } from '../../types/chat';
 
 interface ChatItemProps {
@@ -9,7 +9,7 @@ interface ChatItemProps {
   onDelete?: () => void;
 }
 
-const ChatItem: React.FC<ChatItemProps> = ({ chat, active = false, onClick, onEdit, onDelete }) => {
+const ChatItem: React.FC<ChatItemProps> = memo(({ chat, active = false, onClick, onEdit, onDelete }) => {
   return (
     <div
       className={`chat-item ${active ? 'active' : ''}`}
@@ -39,6 +39,8 @@ const ChatItem: React.FC<ChatItemProps> = ({ chat, active = false, onClick, onEd
       </div>
     </div>
   );
-};
+});
+
+ChatItem.displayName = 'ChatItem';
 
 export default ChatItem;

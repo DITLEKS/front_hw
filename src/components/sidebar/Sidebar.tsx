@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SearchInput from './SearchInput';
 import ChatList from './ChatList';
@@ -9,17 +9,17 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const { chats, activeChatId, createChat, updateChat, deleteChat, setActiveChat } = useChatStore();
 
-  const handleCreateNewChat = () => {
+  const handleCreateNewChat = useCallback(() => {
     const newChatId = createChat();
     navigate(`/chat/${newChatId}`);
-  };
+  }, [createChat, navigate]);
 
-  const handleSelect = (chatId: string) => {
+  const handleSelect = useCallback((chatId: string) => {
     setActiveChat(chatId);
     navigate(`/chat/${chatId}`);
-  };
+  }, [setActiveChat, navigate]);
 
-  const handleEdit = (chatId: string) => {
+  const handleEdit = useCallback((chatId: string) => {
     const chat = chats.find(c => c.id === chatId);
     if (chat) {
       const newName = window.prompt('Новое имя чата', chat.name);
@@ -27,20 +27,24 @@ const Sidebar: React.FC = () => {
         updateChat(chatId, { name: newName.trim() });
       }
     }
-  };
+  }, [chats, updateChat]);
 
-  const handleDelete = (chatId: string) => {
+  const handleDelete = useCallback((chatId: string) => {
     if (window.confirm('Удалить чат?')) {
       deleteChat(chatId);
       if (activeChatId === chatId) {
         navigate('/');
       }
     }
-  };
+  }, [deleteChat, activeChatId, navigate]);
 
-  const filteredChats = chats.filter((chat) =>
-    chat.name.toLowerCase().includes(search.toLowerCase()) ||
-    chat.lastMessage.toLowerCase().includes(search.toLowerCase())
+  // useMemo не пересчитывает список при каждом рендере сайдбара
+  const filteredChats = useMemo(() =>
+    chats.filter((chat) =>
+      chat.name.toLowerCase().includes(search.toLowerCase()) ||
+      chat.lastMessage.toLowerCase().includes(search.toLowerCase())
+    ),
+    [chats, search]
   );
 
   return (

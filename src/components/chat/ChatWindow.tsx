@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
 import TypingIndicator from './TypingIndicator';
-import SettingsPanel from '../settings/SettingsPanel';
+import ErrorBoundary from '../ui/ErrorBoundary';
 import { useChatStore } from '../../stores/chatStore';
 import { Message } from '../../types/message';
+
+const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
 
 interface ChatWindowProps {
   chatId?: string;
@@ -18,6 +20,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
   const { chats, activeChatId, addMessage, setLoading, setError, generateChatName, setActiveChat } = useChatStore();
   const [showSettings, setShowSettings] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const chat = chats.find(c => c.id === chatId);
@@ -30,46 +33,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
     }
   }, [chatId, activeChatId, setActiveChat]);
 
-  const getAccessToken = async (): Promise<string> => {
+  const getAccessToken = useCallback(async (): Promise<string> => {
     if (accessToken) return accessToken;
-
-    const response = await fetch('http://localhost:3002/api/oauth', {
-      method: 'POST',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to get access token');
-    }
-
+    const response = await fetch('http://localhost:3002/api/oauth', { method: 'POST' });
+    if (!response.ok) throw new Error('Failed to get access token');
     const data = await response.json();
     const token = data.access_token;
     setAccessToken(token);
     return token;
-  };
+  }, [accessToken]);
 
-  const sendMessageToGigaChat = async (messagesForAPI: { role: string; content: string }[]): Promise<string> => {
+  const sendMessageToGigaChat = useCallback(async (
+    messagesForAPI: { role: string; content: string }[]
+  ): Promise<string> => {
     const response = await fetch('http://localhost:3002/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'GigaChat',
-        messages: messagesForAPI,
-        stream: false,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'GigaChat', messages: messagesForAPI, stream: false }),
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to send message');
-    }
-
+    if (!response.ok) throw new Error('Failed to send message');
     const data = await response.json();
     return data.choices[0].message.content;
-  };
+  }, []);
 
-  const handleSend = async (content: string) => {
+  const handleSend = useCallback(async (content: string) => {
     if (!chatId) return;
+    setSendError(null);
 
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
@@ -96,12 +85,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
       };
       addMessage(chatId, assistantMessage);
 
-      // Generate name if first message
       if (messages.length === 0) {
         generateChatName(chatId);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      const errMsg = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      setSendError(`Ошибка отправки: ${errMsg}`);
+      setError(errMsg);
+
       const errorMessage: Message = {
         id: `msg-${Date.now() + 1}`,
         role: 'assistant',
@@ -109,21 +100,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
         timestamp: new Date(),
       };
       addMessage(chatId, errorMessage);
-      setError('Ошибка при отправке сообщения');
     } finally {
       setLoading(false);
     }
-  };
+  }, [chatId, messages, addMessage, setLoading, setError, generateChatName, sendMessageToGigaChat]);
+
+  const handleStop = useCallback(() => {
+    setLoading(false);
+  }, [setLoading]);
+
+  const handleRetry = useCallback(() => {
+    setSendError(null);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
-
-  const handleStop = () => {
-    setLoading(false);
-  };
 
   if (!chat) {
     return <div className="chat-window">Чат не найден</div>;
@@ -133,18 +127,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
     <div className="chat-window">
       <div className="chat-header">
         <h2>{chat.name}</h2>
-        <button
-          className="settings-button"
-          onClick={() => setShowSettings(true)}
-        >
+        <button className="settings-button" onClick={() => setShowSettings(true)}>
           ⚙
         </button>
       </div>
 
       <div className="chat-body">
-        <MessageList messages={messages} isLoading={isLoading} />
+        {/* ErrorBoundary изолирует ошибки рендера сообщений */}
+        <ErrorBoundary>
+          <MessageList messages={messages} isLoading={isLoading} />
+        </ErrorBoundary>
         <div ref={scrollRef} />
       </div>
+
+      {/* Ошибка API отображается под списком, не ломает интерфейс */}
+      {sendError && (
+        <div className="send-error">
+          <span>⚠️ {sendError}</span>
+          <button onClick={handleRetry} className="send-error__retry">Повторить</button>
+        </div>
+      )}
 
       <InputArea onSend={handleSend} isLoading={isLoading} onStop={handleStop} />
 
@@ -152,7 +154,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
         <div className="settings-modal" onClick={() => setShowSettings(false)}>
           <div className="settings-modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setShowSettings(false)}>×</button>
-            <SettingsPanel />
+            {/* Suspense + lazy: SettingsPanel загружается только при открытии */}
+            <Suspense fallback={<div className="settings-loading">Загрузка настроек…</div>}>
+              <SettingsPanel />
+            </Suspense>
           </div>
         </div>
       )}

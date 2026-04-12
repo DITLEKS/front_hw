@@ -1,5 +1,15 @@
-import React, { useState } from 'react';
-import Sidebar from '../sidebar/Sidebar';
+import React, { useState, lazy, Suspense } from 'react';
+
+// Сайдбар загружается лениво, т.к не нужен при первом рендере
+const Sidebar = lazy(() => import('../sidebar/Sidebar'));
+
+const SidebarLoader = () => (
+  <div className="sidebar-loader">
+    <div className="sidebar-loader__item" />
+    <div className="sidebar-loader__item" />
+    <div className="sidebar-loader__item" />
+  </div>
+);
 
 const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -13,7 +23,9 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         ☰
       </button>
       <aside className={`sidebar-container ${sidebarVisible ? 'open' : ''}`}>
-        <Sidebar />
+        <Suspense fallback={<SidebarLoader />}>
+          <Sidebar />
+        </Suspense>
       </aside>
       <main className="content">{children}</main>
     </div>
