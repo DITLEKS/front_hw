@@ -7,6 +7,7 @@ import ErrorBoundary from '../ui/ErrorBoundary';
 import { useChatStore } from '../../stores/chatStore';
 import { Message } from '../../types/message';
 
+// Ленивая загрузка SettingsPanel — открывается редко
 const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
 
 interface ChatWindowProps {
@@ -35,7 +36,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
 
   const getAccessToken = useCallback(async (): Promise<string> => {
     if (accessToken) return accessToken;
-    const response = await fetch('http://localhost:3002/api/oauth', { method: 'POST' });
+    const apiBase = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3002';
+    const response = await fetch(`${apiBase}/api/oauth`, { method: 'POST' });
     if (!response.ok) throw new Error('Failed to get access token');
     const data = await response.json();
     const token = data.access_token;
@@ -46,7 +48,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
   const sendMessageToGigaChat = useCallback(async (
     messagesForAPI: { role: string; content: string }[]
   ): Promise<string> => {
-    const response = await fetch('http://localhost:3002/api/chat', {
+    const apiBase = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3002';
+    const response = await fetch(`${apiBase}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'GigaChat', messages: messagesForAPI, stream: false }),
