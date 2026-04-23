@@ -63,7 +63,7 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
         setImagePreviews([]);
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
       } catch {
-        // ошибка обрабатывается в ChatWindow
+        // Ошибку обрабатывает родительский компонент ChatWindow
       }
     }
   };
@@ -81,7 +81,7 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
     <div className="input-wrapper">
       <div className={`input-box${isLoading ? ' input-box--loading' : ''}`}>
 
-        {/* Превью изображений и горизонтальная полоса */}
+        {/* Показываем превью изображений */}
         {imagePreviews.length > 0 && (
           <div className="input-box__previews">
             {imagePreviews.map((img, index) => (
@@ -104,7 +104,7 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
           </div>
         )}
 
-        {/* Textarea */}
+        {/* Основное текстовое поле */}
         <textarea
           ref={textareaRef}
           className="input-box__textarea"
@@ -117,7 +117,7 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
           disabled={isLoading}
         />
 
-        {/* Нижняя панель */}
+        {/* Панель кнопок и подсказок */}
         <div className="input-box__toolbar">
           <div className="input-box__toolbar-left">
             <button
@@ -170,7 +170,7 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
         </div>
       </div>
 
-      {/* multiple позволяет выбрать сразу несколько файлов */}
+      {/* Можно выбрать сразу несколько файлов */}
       <input
         ref={fileInputRef}
         type="file"

@@ -1,6 +1,6 @@
 import React, { useState, lazy, Suspense } from 'react';
 
-// Сайдбар загружается лениво, т.к не нужен при первом рендере
+// Загружаем Sidebar только при первом открытии
 const Sidebar = lazy(() => import('../sidebar/Sidebar'));
 
 const SidebarLoader = () => (

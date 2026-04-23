@@ -43,6 +43,15 @@ const Sidebar: React.FC = () => {
     setShowMenu(false);
   };
 
+  const handleLogout = useCallback(() => {
+    try {
+      localStorage.removeItem('auth');
+    } catch {
+      // ignore
+    }
+    window.location.reload();
+  }, []);
+
   const handleCreateNewChat = useCallback(() => {
     const id = createChat();
     navigate(`/chat/${id}`);
@@ -101,7 +110,7 @@ const Sidebar: React.FC = () => {
         onDelete={handleDelete}
       />
 
-      {/* ===== ФУТЕР ===== */}
+      {/* Футер сайдбара */}
       <div className="sidebar-footer" ref={menuRef}>
         <button
           className={`sidebar-user-btn${showMenu ? ' active' : ''}`}
@@ -111,7 +120,7 @@ const Sidebar: React.FC = () => {
           aria-expanded={showMenu}
         >
           <div className="sidebar-user-avatar">А</div>
-          <span className="sidebar-user-name">Александра</span>
+          <span className="sidebar-user-name">Пользователь</span>
           <svg
             className={`sidebar-user-chevron${showMenu ? ' rotated' : ''}`}
             width="14" height="14" viewBox="0 0 24 24"
@@ -121,11 +130,10 @@ const Sidebar: React.FC = () => {
           </svg>
         </button>
 
-        {/* ===== POPOVER ===== */}
         {showMenu && (
           <div className="sidebar-popover">
 
-            {/* Внешний вид → подменю тем */}
+            {/* Меню выбора темы */}
             <div
               className={`sidebar-popover-item${submenu === 'theme' ? ' active' : ''}`}
               onMouseEnter={() => setSubmenu('theme')}
@@ -182,9 +190,25 @@ const Sidebar: React.FC = () => {
               )}
             </div>
 
+            {/* Кнопка выйти */}
+            <button
+              className="sidebar-popover-item sidebar-popover-item--logout"
+              onClick={handleLogout}
+              onMouseEnter={() => setSubmenu(null)}
+              type="button"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Выйти</span>
+            </button>
+
             <div className="sidebar-popover-divider" />
 
-            {/* Инфо пользователя */}
+            {/* Блок данных пользователя */}
             <div
               className="sidebar-popover-item sidebar-popover-item--info"
               onMouseEnter={() => setSubmenu(null)}

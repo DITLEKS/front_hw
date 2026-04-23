@@ -26,11 +26,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
       return;
     }
 
-    // Сохраняем авторизацию чтобы не логиниться после перезагрузки
+    // Запоминаем данные для входа
     try {
       localStorage.setItem('auth', JSON.stringify({ credentials, scope }));
     } catch {
-      // ignore
+      // Не ругаемся, если localStorage недоступен
     }
 
     onLogin?.();

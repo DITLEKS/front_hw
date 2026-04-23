@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 import Message from './Message';
 import { Message as MessageType } from '../../types/message';
 
-// Мокируем react-markdown и react-syntax-highlighter для изоляции теста
+// Заменяем внешние модули на простые мок-версии
 jest.mock('react-markdown', () => ({ children }: { children: React.ReactNode }) => (
   <div data-testid="markdown">{children}</div>
 ));
@@ -88,7 +88,7 @@ describe('Message – variant="assistant"', () => {
   });
 
   it('после клика на «Копировать» показывается «✅ Скопировано»', async () => {
-    // Мок navigator.clipboard
+    // Подменяем буфер обмена для теста
     Object.assign(navigator, {
       clipboard: { writeText: jest.fn().mockResolvedValue(undefined) },
     });
@@ -96,7 +96,7 @@ describe('Message – variant="assistant"', () => {
     render(<Message message={makeMessage({ role: 'assistant' })} />);
     const btn = screen.getByLabelText('Скопировать сообщение');
     fireEvent.click(btn);
-    // Ждём обновления состояния
+    // Ждём, пока появится надпись о копировании
     expect(await screen.findByText('✅ Скопировано')).toBeInTheDocument();
   });
 });

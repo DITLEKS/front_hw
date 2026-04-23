@@ -1,13 +1,16 @@
-export interface ImageContent {
-  type: 'image';
-  mime_type: string;
-  alt: string;
-  data: string;
+export interface ImageUrlContent {
+  type: 'image_url';
+  image_url: { url: string };
+}
+
+export interface TextContent {
+  type: 'text';
+  text: string;
 }
 
 export interface GigaChatRequestMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string | ImageContent;
+  content: string | (ImageUrlContent | TextContent)[];
 }
 
 export interface GigaChatRequestBody {
@@ -33,12 +36,11 @@ export interface GigaChatResponse {
 
 export const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3002';
 
-// Вспомогательная функция — безопасная комбинация AbortSignal
+// Объединяем несколько сигналов отмены в один
 function combineSignals(signals: AbortSignal[]): AbortSignal {
   if (typeof (AbortSignal as any).any === 'function') {
     return (AbortSignal as any).any(signals) as AbortSignal;
   }
-  // Fallback для старых браузеров: используем первый сигнал (обычно пользовательский)
   const controller = new AbortController();
   for (const signal of signals) {
     if (signal.aborted) {
@@ -106,6 +108,5 @@ export const fetchModels = async (): Promise<string[]> => {
   }
 
   const data = await response.json();
-  // GigaChat возвращает { data: [{ id: 'GigaChat', object: 'model', ... }] }
   return data.data?.map((m: { id: string }) => m.id) ?? [];
 };

@@ -19,7 +19,7 @@ const makeMessage = (overrides: Partial<Message> = {}): Message => ({
   ...overrides,
 });
 
-// ADD_CHAT
+// Тесты для ADD_CHAT
 describe('ADD_CHAT', () => {
   it('добавляет чат в начало массива chats', () => {
     const chat = makeChat();
@@ -50,7 +50,7 @@ describe('ADD_CHAT', () => {
   });
 });
 
-// ADD_MESSAGE
+// Тесты для ADD_MESSAGE
 describe('ADD_MESSAGE', () => {
   it('увеличивает массив messages на 1', () => {
     const chat = makeChat({ id: 'chat-1' });
@@ -90,7 +90,7 @@ describe('ADD_MESSAGE', () => {
   });
 });
 
-// DELETE_CHAT
+// Тесты для DELETE_CHAT
 describe('DELETE_CHAT', () => {
   it('удаляет чат из массива chats', () => {
     const chat1 = makeChat({ id: 'chat-1' });
@@ -123,7 +123,7 @@ describe('DELETE_CHAT', () => {
   });
 });
 
-// UPDATE_CHAT (RENAME_CHAT)
+// Тесты для UPDATE_CHAT
 describe('UPDATE_CHAT (rename)', () => {
   it('корректно обновляет название чата по id', () => {
     const chat = makeChat({ id: 'chat-1', name: 'Старое имя' });
@@ -145,7 +145,7 @@ describe('UPDATE_CHAT (rename)', () => {
   });
 });
 
-// SET_ACTIVE_CHAT
+// Тесты для SET_ACTIVE_CHAT
 describe('SET_ACTIVE_CHAT', () => {
   it('устанавливает activeChatId', () => {
     const state = chatReducer(initialState, { type: 'SET_ACTIVE_CHAT', payload: 'chat-42' });

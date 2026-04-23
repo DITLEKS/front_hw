@@ -54,7 +54,7 @@ export const useGigaChat = () => {
               onChunk(content);
             }
           } catch {
-            // Пропускаем служебные SSE-события
+            // Игнорируем служебные SSE-сообщения
           }
         }
       }
@@ -70,7 +70,7 @@ export const useGigaChat = () => {
               data.choices?.[0]?.message?.content;
             if (content) onChunk(content);
           } catch {
-            // пропускаем
+            // Игнорируем ошибочные части ответа
           }
         }
       }

@@ -46,7 +46,7 @@ const Message: React.FC<MessageProps> = React.memo(({ message }) => {
     }
   };
 
-  // Нормализуем к массиву: images[] имеет приоритет, иначе собираем из image/imageUrl
+  // Собираем все изображения в единый массив
   const resolvedImages: MessageImage[] = message.images && message.images.length > 0
     ? message.images
     : message.image

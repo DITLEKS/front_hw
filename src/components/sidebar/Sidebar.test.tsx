@@ -106,14 +106,14 @@ describe('Sidebar – удаление', () => {
     render(<Sidebar />);
     const deleteBtns = screen.getAllByLabelText('Удалить чат');
     fireEvent.click(deleteBtns[0]);
-    // Dialog показывает заголовок "Удалить чат?"
+    // Ожидаем подтверждение удаления
     expect(screen.getByText('Удалить чат?')).toBeInTheDocument();
   });
 
   it('при подтверждении в диалоге вызывается deleteChat', () => {
     render(<Sidebar />);
     fireEvent.click(screen.getAllByLabelText('Удалить чат')[0]);
-    // Нажимаем кнопку "Удалить" в Dialog
+    // Подтверждаем удаление в диалоге
     fireEvent.click(screen.getByText('Удалить'));
     expect(mockDeleteChat).toHaveBeenCalledWith('chat-1');
   });

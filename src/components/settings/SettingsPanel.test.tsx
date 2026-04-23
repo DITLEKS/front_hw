@@ -43,7 +43,7 @@ describe('SettingsPanel', () => {
 
   it('после загрузки моделей отображает select с GigaChat', async () => {
     render(<SettingsPanel onClose={mockOnClose} />);
-    // Ждём пока models загрузятся (fetchModels resolved)
+    // Ждём загрузки списка моделей
     await waitFor(() => {
       expect(screen.getByDisplayValue('GigaChat')).toBeInTheDocument();
     });

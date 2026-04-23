@@ -40,7 +40,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
     }
   }, [chatId, activeChatId, setActiveChat]);
 
-  // Автоскролл к последнему сообщению
+  // Прокручиваем чат вниз к последнему сообщению
   useEffect(() => {
     if (chatBodyRef.current) {
       chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;

@@ -2,6 +2,7 @@ import { useChatStore } from '../stores/chatStore';
 import { Message } from '../types/message';
 import { useGigaChat } from './useGigaChat';
 import { loadSettings } from '../utils/settings';
+import { GigaChatRequestMessage, ImageUrlContent, TextContent } from '../api/chatApi';
 
 interface AttachedImage {
   url: string;
@@ -21,7 +22,7 @@ export const useChatSender = () => {
     if (!chatId) return;
     setError(null);
 
-    // Нормализуем к массиву
+    // Приводим вложенные изображения к массиву
     const images: AttachedImage[] = !attachedImages
       ? []
       : Array.isArray(attachedImages)
@@ -63,36 +64,24 @@ export const useChatSender = () => {
       const settings = loadSettings();
 
       const allMessages = useChatStore.getState().chats.find(c => c.id === chatId)?.messages || [];
-      const messagesForAPI = allMessages
+
+      const messagesForAPI: GigaChatRequestMessage[] = allMessages
         .filter(m => m.id !== assistantMessageId && m.content !== '')
-        .flatMap((message) => {
+        .flatMap((message): GigaChatRequestMessage[] => {
           const imgs: AttachedImage[] = (message as any).images ?? (message.image ? [message.image] : []);
 
-          if (imgs.length > 1) {
-            return [
-              ...imgs.map(img => ({
-                role: message.role,
-                content: {
-                  type: 'image' as const,
-                  mime_type: img.mimeType || 'image/png',
-                  alt: img.alt || 'image',
-                  data: img.url,
-                },
+          if (imgs.length > 0) {
+            const contentParts: (ImageUrlContent | TextContent)[] = [
+              ...imgs.map((img): ImageUrlContent => ({
+                type: 'image_url',
+                image_url: { url: img.url },
               })),
-              { role: message.role, content: message.content },
+              ...(message.content
+                ? [{ type: 'text' as const, text: message.content } satisfies TextContent]
+                : []
+              ),
             ];
-          }
-
-          if (imgs.length === 1) {
-            return [{
-              role: message.role,
-              content: {
-                type: 'image' as const,
-                mime_type: imgs[0].mimeType || 'image/png',
-                alt: imgs[0].alt || 'image',
-                data: imgs[0].url,
-              },
-            }];
+            return [{ role: message.role, content: contentParts }];
           }
 
           return [{ role: message.role, content: message.content }];
