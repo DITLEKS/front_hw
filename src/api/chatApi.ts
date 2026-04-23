@@ -1,16 +1,7 @@
-export interface ImageUrlContent {
-  type: 'image_url';
-  image_url: { url: string };
-}
-
-export interface TextContent {
-  type: 'text';
-  text: string;
-}
-
 export interface GigaChatRequestMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string | (ImageUrlContent | TextContent)[];
+  content: string;
+  attachments?: string[];
 }
 
 export interface GigaChatRequestBody {
@@ -36,12 +27,13 @@ export interface GigaChatResponse {
 
 export const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3002';
 
-// Объединяем несколько сигналов отмены в один
 function combineSignals(signals: AbortSignal[]): AbortSignal {
   if (typeof (AbortSignal as any).any === 'function') {
     return (AbortSignal as any).any(signals) as AbortSignal;
   }
+
   const controller = new AbortController();
+
   for (const signal of signals) {
     if (signal.aborted) {
       controller.abort();
@@ -49,6 +41,7 @@ function combineSignals(signals: AbortSignal[]): AbortSignal {
     }
     signal.addEventListener('abort', () => controller.abort(), { once: true });
   }
+
   return controller.signal;
 }
 
@@ -86,12 +79,15 @@ export const sendChatRequest = async (
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
       }
+
       if (attempt === retries) {
         throw error;
       }
+
       await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
     }
   }
+
   throw new Error('Не удалось выполнить запрос после всех попыток');
 };
 

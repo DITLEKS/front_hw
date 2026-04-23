@@ -2,13 +2,16 @@ import { useChatStore } from '../stores/chatStore';
 import { Message } from '../types/message';
 import { useGigaChat } from './useGigaChat';
 import { loadSettings } from '../utils/settings';
-import { GigaChatRequestMessage, ImageUrlContent, TextContent } from '../api/chatApi';
+import { GigaChatRequestMessage } from '../api/chatApi';
+import { uploadFile } from '../api/fileApi';
 
 interface AttachedImage {
   url: string;
   alt: string;
   mimeType: string;
 }
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const useChatSender = () => {
   const { addMessage, updateMessage, setLoading, setError, generateChatName } = useChatStore();
@@ -22,35 +25,56 @@ export const useChatSender = () => {
     if (!chatId) return;
     setError(null);
 
-    // Приводим вложенные изображения к массиву
     const images: AttachedImage[] = !attachedImages
       ? []
       : Array.isArray(attachedImages)
         ? attachedImages
         : [attachedImages];
 
-    const messagesBefore = useChatStore.getState().chats.find(c => c.id === chatId)?.messages.length ?? 0;
+    const messagesBefore =
+      useChatStore.getState().chats.find((c) => c.id === chatId)?.messages.length ?? 0;
+
+    setLoading(true);
+
+    let uploadedFileIds: string[] = [];
+
+    if (images.length > 0) {
+      try {
+        for (const img of images) {
+          const fileId = await uploadFile(img.url, img.mimeType);
+          uploadedFileIds.push(fileId);
+          await sleep(400);
+        }
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : 'Ошибка загрузки изображения';
+        setError(errMsg);
+        setLoading(false);
+        return;
+      }
+    }
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
       content,
       timestamp: new Date().toISOString(),
-      ...(images.length > 0 ? {
-        image: {
-          url: images[0].url,
-          alt: images[0].alt,
-          mimeType: images[0].mimeType,
-        },
-        images: images.map(img => ({
-          url: img.url,
-          alt: img.alt,
-          mimeType: img.mimeType,
-        })),
-      } : {}),
+      ...(images.length > 0
+        ? {
+            image: {
+              url: images[0].url,
+              alt: images[0].alt,
+              mimeType: images[0].mimeType,
+            },
+            images: images.map((img) => ({
+              url: img.url,
+              alt: img.alt,
+              mimeType: img.mimeType,
+            })),
+          }
+        : {}),
     };
+
     addMessage(chatId, userMessage);
-    setLoading(true);
 
     const assistantMessageId = crypto.randomUUID();
     addMessage(chatId, {
@@ -63,35 +87,42 @@ export const useChatSender = () => {
     try {
       const settings = loadSettings();
 
-      const allMessages = useChatStore.getState().chats.find(c => c.id === chatId)?.messages || [];
+      const allMessages =
+        useChatStore.getState().chats.find((c) => c.id === chatId)?.messages || [];
 
-      const messagesForAPI: GigaChatRequestMessage[] = allMessages
-        .filter(m => m.id !== assistantMessageId && m.content !== '')
-        .flatMap((message): GigaChatRequestMessage[] => {
-          const imgs: AttachedImage[] = (message as any).images ?? (message.image ? [message.image] : []);
+      const historyMessages: GigaChatRequestMessage[] = allMessages
+        .filter(
+          (m) =>
+            m.id !== assistantMessageId &&
+            m.id !== userMessage.id &&
+            typeof m.content === 'string' &&
+            m.content.trim() !== ''
+        )
+        .map((m): GigaChatRequestMessage => ({
+          role: m.role,
+          content: m.content.trim(),
+        }));
 
-          if (imgs.length > 0) {
-            const contentParts: (ImageUrlContent | TextContent)[] = [
-              ...imgs.map((img): ImageUrlContent => ({
-                type: 'image_url',
-                image_url: { url: img.url },
-              })),
-              ...(message.content
-                ? [{ type: 'text' as const, text: message.content } satisfies TextContent]
-                : []
-              ),
-            ];
-            return [{ role: message.role, content: contentParts }];
-          }
+      const currentMessageForApi: GigaChatRequestMessage = {
+        role: 'user',
+        content: content.trim(),
+        ...(uploadedFileIds.length > 0 ? { attachments: uploadedFileIds } : {}),
+      };
 
-          return [{ role: message.role, content: message.content }];
-        });
+      const messagesForAPI: GigaChatRequestMessage[] = [
+        ...historyMessages,
+        currentMessageForApi,
+      ];
 
       if (settings.systemPrompt.trim()) {
-        messagesForAPI.unshift({ role: 'system', content: settings.systemPrompt });
+        messagesForAPI.unshift({
+          role: 'system',
+          content: settings.systemPrompt.trim(),
+        });
       }
 
       let assistantContent = '';
+
       await sendMessage(
         {
           model: settings.model,
@@ -114,7 +145,11 @@ export const useChatSender = () => {
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Неизвестная ошибка';
       setError(errMsg);
-      updateMessage(chatId, assistantMessageId, 'Извините, произошла ошибка при обработке вашего сообщения.');
+      updateMessage(
+        chatId,
+        assistantMessageId,
+        'Извините, произошла ошибка при обработке вашего сообщения.'
+      );
     } finally {
       setLoading(false);
     }

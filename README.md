@@ -12,7 +12,7 @@ React-приложение для общения с GigaChat API.
 
 | Страница входа | Главная страница | Тёмная тема | Настройки |
 |---|---|---|---|
-| ![Вход](docs/start_page.png) | ![Главная](docs/main_page.png) | ![Тёмная тема](docs/main_page_dark_theme.png) | ![Настройки](docs/settings.png) |
+| ![Вход](docs/start_page.png) | ![Главная](docs/main_page.png) |![Отправка сообщений](docs/main_page_images.png) |![Настройки темы](docs/theme_settings.png) | ![Тёмная тема](docs/main_page_dark_theme.png) | ![Настройки](docs/main_settings.png) |
 
 ---
 

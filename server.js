@@ -3,6 +3,7 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 const https = require('https');
 const crypto = require('crypto');
+const FormData = require('form-data');
 require('dotenv').config();
 
 const app = express();
@@ -93,6 +94,45 @@ app.post('/api/chat', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('Chat error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/upload', async (req, res) => {
+  try {
+    const token = await getAccessToken();
+    const { dataUrl, mimeType } = req.body;
+
+    const base64 = dataUrl.split(',')[1];
+    const buffer = Buffer.from(base64, 'base64');
+    const ext = mimeType.split('/')[1] || 'png';
+
+    const formData = new FormData();
+    formData.append('file', buffer, {
+      filename: `image.${ext}`,
+      contentType: mimeType,
+    });
+    formData.append('purpose', 'general');
+
+    const response = await fetch('https://gigachat.devices.sberbank.ru/api/v1/files', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        ...formData.getHeaders(),
+      },
+      body: formData,
+      agent: new https.Agent({ rejectUnauthorized: false }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`File upload failed: ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Upload error:', error);
     res.status(500).json({ error: error.message });
   }
 });
