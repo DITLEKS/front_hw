@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useRef } from 'react';
 import { sendChatRequest, GigaChatRequestBody } from '../api/chatApi';
 import { parseSseEvents } from '../utils/sse';
 
@@ -15,69 +15,73 @@ export const useGigaChat = () => {
   };
 
   const sendMessage = async (body: GigaChatRequestBody, onChunk: ChatStreamCallback) => {
-      stop();
+    stop();
 
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-      const response = await sendChatRequest(body, controller.signal);
-      const contentType = response.headers.get('content-type') || '';
+    const response = await sendChatRequest(body, controller.signal);
+    const contentType = response.headers.get('content-type') || '';
 
-      if (contentType.includes('text/event-stream')) {
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error('Не удалось получить поток ответа от сервера.');
-        }
+    if (contentType.includes('text/event-stream')) {
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Не удалось получить поток ответа от сервера.');
+      }
 
-        let buffer = '';
-        const decoder = new TextDecoder();
+      let buffer = '';
+      const decoder = new TextDecoder();
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-          const chunkText = decoder.decode(value, { stream: true });
-          const parsed = parseSseEvents(chunkText, buffer);
-          buffer = parsed.remainder;
+        const chunkText = decoder.decode(value, { stream: true });
+        const parsed = parseSseEvents(chunkText, buffer);
+        buffer = parsed.remainder;
 
-          for (const event of parsed.events) {
-            if (event.data === '[DONE]') {
-              return;
-            }
-
-            try {
-              const data = JSON.parse(event.data);
-              const delta = data.choices?.[0]?.delta;
-              const message = data.choices?.[0]?.message;
-              const content = delta?.content || message?.content;
-              if (content) {
-                onChunk(content);
-              }
-            } catch {
-              // Не вызывать onChunk(event.data) — просто пропускаем служебные SSE-события
-            }
+        for (const event of parsed.events) {
+          if (event.data === '[DONE]') {
+            return;
           }
-        }
 
-        if (buffer.trim()) {
           try {
-            const data = JSON.parse(buffer);
-            const content = data.choices?.[0]?.delta?.content || data.choices?.[0]?.message?.content;
+            const data = JSON.parse(event.data);
+            const delta = data.choices?.[0]?.delta;
+            const message = data.choices?.[0]?.message;
+            const content = delta?.content || message?.content;
             if (content) {
               onChunk(content);
             }
           } catch {
-            // ничего не делать — это не валидный JSON-chunk
+            // Пропускаем служебные SSE-события
           }
         }
-      } else {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) {
-          onChunk(content);
+      }
+
+      if (buffer.trim()) {
+        const finalParsed = parseSseEvents('', buffer);
+        for (const event of finalParsed.events) {
+          if (event.data === '[DONE]') break;
+          try {
+            const data = JSON.parse(event.data);
+            const content =
+              data.choices?.[0]?.delta?.content ||
+              data.choices?.[0]?.message?.content;
+            if (content) onChunk(content);
+          } catch {
+            // пропускаем
+          }
         }
       }
-    };
+    } else {
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (content) {
+        onChunk(content);
+      }
+    }
+  };
 
   return { sendMessage, stop };
 };

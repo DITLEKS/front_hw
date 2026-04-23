@@ -1,11 +1,16 @@
-import React, { useState, useMemo, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SearchInput from './SearchInput';
 import ChatList from './ChatList';
+import Dialog from '../ui/Dialog';
 import { useChatStore } from '../../stores/chatStore';
 
 const Sidebar: React.FC = () => {
   const [search, setSearch] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [renameTarget, setRenameTarget] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+
   const navigate = useNavigate();
   const { chats, activeChatId, createChat, updateChat, deleteChat, setActiveChat } = useChatStore();
 
@@ -20,25 +25,34 @@ const Sidebar: React.FC = () => {
   }, [setActiveChat, navigate]);
 
   const handleEdit = useCallback((chatId: string) => {
-    const chat = chats.find(c => c.id === chatId);
+    const chat = chats.find((c) => c.id === chatId);
     if (chat) {
-      const newName = window.prompt('Новое имя чата', chat.name);
-      if (newName && newName.trim()) {
-        updateChat(chatId, { name: newName.trim() });
-      }
+      setRenameValue(chat.name);
+      setRenameTarget(chatId);
     }
-  }, [chats, updateChat]);
+  }, [chats]);
 
   const handleDelete = useCallback((chatId: string) => {
-    if (window.confirm('Удалить чат?')) {
-      deleteChat(chatId);
-      if (activeChatId === chatId) {
+    setDeleteTarget(chatId);
+  }, []);
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deleteChat(deleteTarget);
+      if (activeChatId === deleteTarget) {
         navigate('/');
       }
+      setDeleteTarget(null);
     }
-  }, [deleteChat, activeChatId, navigate]);
+  };
 
-  // useMemo не пересчитывает список при каждом рендере сайдбара
+  const confirmRename = () => {
+    if (renameTarget && renameValue.trim()) {
+      updateChat(renameTarget, { name: renameValue.trim() });
+    }
+    setRenameTarget(null);
+  };
+
   const filteredChats = useMemo(() =>
     chats.filter((chat) => {
       const query = search.toLowerCase();
@@ -47,7 +61,6 @@ const Sidebar: React.FC = () => {
       const matchMessages = chat.messages.some((message) =>
         message.content.toLowerCase().includes(query)
       );
-
       return matchName || matchLastMessage || matchMessages;
     }),
     [chats, search]
@@ -66,6 +79,31 @@ const Sidebar: React.FC = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
+
+      <Dialog
+        isOpen={!!deleteTarget}
+        title="Удалить чат?"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+        confirmLabel="Удалить"
+        danger
+      />
+
+      <Dialog
+        isOpen={!!renameTarget}
+        title="Переименовать чат"
+        onConfirm={confirmRename}
+        onCancel={() => setRenameTarget(null)}
+        confirmLabel="Сохранить"
+      >
+        <input
+          type="text"
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') confirmRename(); }}
+          autoFocus
+        />
+      </Dialog>
     </div>
   );
 };

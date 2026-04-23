@@ -9,15 +9,20 @@ interface InputAreaProps {
 
 const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading, onStop }) => {
   const [value, setValue] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setValue(e.target.value);
+  const resizeTextarea = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setValue(e.target.value);
+    resizeTextarea();
   };
 
   const handleAttach = () => {
@@ -31,16 +36,15 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
-      const markdown = `![${file.name}](${base64})`;
-      setValue((prev) => `${prev}${prev ? '\n\n' : ''}${markdown}`);
+      setImagePreview(base64);
       onAttachImage({ url: base64, alt: file.name, mimeType: file.type });
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-        textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-      }
     };
     reader.readAsDataURL(file);
     e.target.value = '';
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
   };
 
   const handleSend = async () => {
@@ -48,8 +52,9 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
       try {
         await onSend(value.trim());
         setValue('');
-      } catch (error) {
-        // Ошибка уже обработана выше
+        setImagePreview(null);
+      } catch {
+        // ошибка обрабатывается в ChatWindow
       }
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
@@ -66,6 +71,19 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
 
   return (
     <div className="input-area">
+      {imagePreview && (
+        <div className="image-preview">
+          <img src={imagePreview} alt="preview" className="image-preview__img" />
+          <button
+            className="image-preview__remove"
+            onClick={handleRemoveImage}
+            type="button"
+            aria-label="Удалить изображение"
+          >
+            ×
+          </button>
+        </div>
+      )}
       <textarea
         ref={textareaRef}
         rows={1}
@@ -76,20 +94,23 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
         onKeyDown={handleKeyDown}
         disabled={isLoading}
       />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
       <div className="controls">
-        <label htmlFor="file-input">
-          <button className="attach" aria-label="Attach image" disabled={isLoading} type="button">
-            📎
-          </button>
-        </label>
-        <input
-          id="file-input"
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
+        <button
+          className="attach"
+          aria-label="Прикрепить изображение"
+          disabled={isLoading}
+          onClick={handleAttach}
+          type="button"
+        >
+          📎
+        </button>
         {isLoading ? (
           <button className="stop" onClick={onStop} type="button">
             Стоп

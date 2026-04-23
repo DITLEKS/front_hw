@@ -12,23 +12,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!login.trim()) {
       setError('Пожалуйста, введите логин');
       return;
     }
-    
+
     if (!password.trim()) {
       setError('Пожалуйста, введите пароль');
       return;
     }
-    
+
     if (password.length < 6) {
       setError('Пароль должен содержать минимум 6 символов');
       return;
     }
-    
-    console.log('login', { login, password });
+
     onLogin && onLogin();
   };
 
@@ -37,7 +36,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
       <div className="auth-container">
         <h1>GigaChat</h1>
         <h2>Войти в аккаунт</h2>
-        
+
         <label htmlFor="login">
           Логин:
           <input
@@ -48,7 +47,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
             placeholder="Введите ваш логин"
           />
         </label>
-        
+
         <label htmlFor="password">
           Пароль:
           <input
@@ -59,11 +58,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
             placeholder="Введите ваш пароль"
           />
         </label>
-        
+
         {error && <div className="error-text">{error}</div>}
-        
+
         <button type="submit" className="submit-btn">Войти</button>
-        
+
         <p className="demo-text">любые логин и пароль (мин. 6 символов)</p>
       </div>
     </form>

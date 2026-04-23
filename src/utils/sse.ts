@@ -20,10 +20,9 @@ export const parseSseEvents = (chunk: string, buffer: string) => {
 
     for (const line of lines) {
       if (line.startsWith('event:')) {
-        eventType = line.replace('event:', '').trim();
-      }
-      if (line.startsWith('data:')) {
-        data += line.replace('data:', '').trim();
+        eventType = line.slice(6).trim();
+      } else if (line.startsWith('data:')) {
+        data += (data ? '\n' : '') + line.slice(5).trim();
       }
     }
 

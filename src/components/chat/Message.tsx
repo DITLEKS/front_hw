@@ -1,13 +1,35 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import type { Components } from 'react-markdown';
 import { Message as MessageType } from '../../types/message';
 
 interface MessageProps {
   message: MessageType;
 }
 
+const CodeBlock: Components['code'] = ({ children, className, node, ...rest }) => {
+  const match = /language-(\w+)/.exec(className || '');
+  const codeString = String(children).replace(/\n$/, '');
+  const isMultiline = codeString.includes('\n');
+
+  return isMultiline && match ? (
+    <SyntaxHighlighter
+      style={oneDark as any}
+      language={match[1]}
+      PreTag="div"
+    >
+      {codeString}
+    </SyntaxHighlighter>
+  ) : (
+    <code className={className} {...rest}>
+      {children}
+    </code>
+  );
+};
+
 const Message: React.FC<MessageProps> = React.memo(({ message }) => {
-  const [hover, setHover] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const variant = message.role === 'user' ? 'user' : 'assistant';
@@ -15,7 +37,6 @@ const Message: React.FC<MessageProps> = React.memo(({ message }) => {
 
   const handleCopy = async () => {
     if (!navigator.clipboard) return;
-
     try {
       await navigator.clipboard.writeText(message.content);
       setCopied(true);
@@ -26,19 +47,15 @@ const Message: React.FC<MessageProps> = React.memo(({ message }) => {
   };
 
   return (
-    <div
-      className={`message ${variant}`}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-    >
+    <div className={`message ${variant}`}>
       <div className="message-bubble">
         <div className="message-header">
           <span className="sender">{senderLabel}</span>
           {variant === 'assistant' && (
             <button
-              className={`copy-btn ${hover ? 'visible' : ''}`}
+              className="copy-btn"
               onClick={handleCopy}
-              aria-label="Copy message"
+              aria-label="Скопировать сообщение"
               title="Скопировать"
               type="button"
             >
@@ -47,33 +64,22 @@ const Message: React.FC<MessageProps> = React.memo(({ message }) => {
           )}
         </div>
         <div className="message-content">
-          <ReactMarkdown
-            components={{
-              code({ node, inline, className, children, ...props }: any) {
-                const match = /language-(\w+)/.exec(className || '');
-                return !inline && match ? (
-                  <pre>
-                    <code className={className} {...props}>
-                      {String(children).replace(/\n$/, '')}
-                    </code>
-                  </pre>
-                ) : (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              },
-            }}
-          >
+          {message.imageUrl && (
+            <img
+              src={message.imageUrl}
+              alt={message.imageAlt || 'Прикреплённое изображение'}
+              className="message-image"
+            />
+          )}
+          <ReactMarkdown components={{ code: CodeBlock }}>
             {message.content}
           </ReactMarkdown>
-          {message.image && (
-            <img src={message.image.url} alt={message.image.alt} className="message-image" />
-          )}
         </div>
       </div>
     </div>
   );
 });
+
+Message.displayName = 'Message';
 
 export default Message;
