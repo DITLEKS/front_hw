@@ -40,10 +40,16 @@ const Sidebar: React.FC = () => {
 
   // useMemo не пересчитывает список при каждом рендере сайдбара
   const filteredChats = useMemo(() =>
-    chats.filter((chat) =>
-      chat.name.toLowerCase().includes(search.toLowerCase()) ||
-      chat.lastMessage.toLowerCase().includes(search.toLowerCase())
-    ),
+    chats.filter((chat) => {
+      const query = search.toLowerCase();
+      const matchName = chat.name.toLowerCase().includes(query);
+      const matchLastMessage = chat.lastMessage.toLowerCase().includes(query);
+      const matchMessages = chat.messages.some((message) =>
+        message.content.toLowerCase().includes(query)
+      );
+
+      return matchName || matchLastMessage || matchMessages;
+    }),
     [chats, search]
   );
 

@@ -6,6 +6,8 @@ import TypingIndicator from './TypingIndicator';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import { useChatStore } from '../../stores/chatStore';
 import { Message } from '../../types/message';
+import { useGigaChat } from '../../hooks/useGigaChat';
+import { loadSettings } from '../../utils/settings';
 
 // Ленивая загрузка SettingsPanel
 const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
@@ -18,11 +20,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
   const { id: urlChatId } = useParams<{ id: string }>();
   const chatId = propChatId || urlChatId;
 
-  const { chats, activeChatId, addMessage, setLoading, setError, generateChatName, setActiveChat } = useChatStore();
+  const { chats, activeChatId, addMessage, updateMessage, setLoading, setError, generateChatName, setActiveChat } = useChatStore();
   const [showSettings, setShowSettings] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [attachedImage, setAttachedImage] = useState<{ url: string; alt: string; mimeType: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { sendMessage, stop } = useGigaChat();
 
   const chat = chats.find(c => c.id === chatId);
   const messages = chat?.messages || [];
@@ -34,31 +37,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
     }
   }, [chatId, activeChatId, setActiveChat]);
 
-  const getAccessToken = useCallback(async (): Promise<string> => {
-    if (accessToken) return accessToken;
-    const apiBase = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3002';
-    const response = await fetch(`${apiBase}/api/oauth`, { method: 'POST' });
-    if (!response.ok) throw new Error('Failed to get access token');
-    const data = await response.json();
-    const token = data.access_token;
-    setAccessToken(token);
-    return token;
-  }, [accessToken]);
-
-  const sendMessageToGigaChat = useCallback(async (
-    messagesForAPI: { role: string; content: string }[]
-  ): Promise<string> => {
-    const apiBase = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3002';
-    const response = await fetch(`${apiBase}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'GigaChat', messages: messagesForAPI, stream: false }),
-    });
-    if (!response.ok) throw new Error('Failed to send message');
-    const data = await response.json();
-    return data.choices[0].message.content;
-  }, []);
-
   const handleSend = useCallback(async (content: string) => {
     if (!chatId) return;
     setSendError(null);
@@ -67,26 +45,66 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
       id: `msg-${Date.now()}`,
       role: 'user',
       content,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
+      ...(attachedImage ? {
+        imageUrl: attachedImage.url,
+        imageAlt: attachedImage.alt,
+        imageMimeType: attachedImage.mimeType,
+      } : {}),
     };
     addMessage(chatId, userMessage);
+    setAttachedImage(null);
     setLoading(true);
 
+    const assistantMessageId = `msg-${Date.now() + 1}`;
+    addMessage(chatId, {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+    });
+
     try {
-      const messagesForAPI = [...messages, userMessage].map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
+      const settings = loadSettings();
+      const messagesForAPI = [...messages, userMessage].map((message) => {
+        if (message.imageUrl) {
+          return {
+            role: message.role,
+            content: {
+              type: 'image',
+              mime_type: message.imageMimeType || 'image/png',
+              alt: message.imageAlt || 'image',
+              data: message.imageUrl,
+            },
+          };
+        }
 
-      const assistantContent = await sendMessageToGigaChat(messagesForAPI);
+        return {
+          role: message.role,
+          content: message.content,
+        };
+      });
 
-      const assistantMessage: Message = {
-        id: `msg-${Date.now() + 1}`,
-        role: 'assistant',
-        content: assistantContent,
-        timestamp: new Date(),
-      };
-      addMessage(chatId, assistantMessage);
+      if (settings.systemPrompt.trim()) {
+        messagesForAPI.unshift({ role: 'system', content: settings.systemPrompt });
+      }
+
+      let assistantContent = '';
+      await sendMessage(
+        {
+          model: settings.model,
+          messages: messagesForAPI,
+          temperature: settings.temperature,
+          top_p: settings.topP,
+          max_tokens: settings.maxTokens,
+          repetition_penalty: settings.repetitionPenalty,
+          stream: true,
+        },
+        (chunk) => {
+          assistantContent += chunk;
+          updateMessage(chatId, assistantMessageId, assistantContent);
+        }
+      );
 
       if (messages.length === 0) {
         generateChatName(chatId);
@@ -95,22 +113,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
       const errMsg = error instanceof Error ? error.message : 'Неизвестная ошибка';
       setSendError(`Ошибка отправки: ${errMsg}`);
       setError(errMsg);
-
-      const errorMessage: Message = {
-        id: `msg-${Date.now() + 1}`,
-        role: 'assistant',
-        content: 'Извините, произошла ошибка при обработке вашего сообщения.',
-        timestamp: new Date(),
-      };
-      addMessage(chatId, errorMessage);
+      updateMessage(chatId, assistantMessageId, 'Извините, произошла ошибка при обработке вашего сообщения.');
     } finally {
       setLoading(false);
     }
-  }, [chatId, messages, addMessage, setLoading, setError, generateChatName, sendMessageToGigaChat]);
+  }, [chatId, messages, addMessage, updateMessage, setLoading, setError, generateChatName, sendMessage]);
 
   const handleStop = useCallback(() => {
+    stop();
     setLoading(false);
-  }, [setLoading]);
+  }, [stop, setLoading]);
 
   const handleRetry = useCallback(() => {
     setSendError(null);
@@ -151,7 +163,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
         </div>
       )}
 
-      <InputArea onSend={handleSend} isLoading={isLoading} onStop={handleStop} />
+      <InputArea onSend={handleSend} onAttachImage={setAttachedImage} isLoading={isLoading} onStop={handleStop} />
 
       {showSettings && (
         <div className="settings-modal" onClick={() => setShowSettings(false)}>

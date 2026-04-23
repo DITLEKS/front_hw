@@ -9,6 +9,7 @@ interface ChatStore extends ChatState {
   deleteChat: (id: string) => void;
   setActiveChat: (id: string | null) => void;
   addMessage: (chatId: string, message: Message) => void;
+  updateMessage: (chatId: string, messageId: string, content: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   generateChatName: (chatId: string) => void;
@@ -68,7 +69,24 @@ export const useChatStore = create<ChatStore>()(
                   ...chat,
                   messages: [...chat.messages, message],
                   lastMessage: message.content.slice(0, 50),
-                  lastMessageDate: message.timestamp.toISOString(),
+                  lastMessageDate: message.timestamp,
+                }
+              : chat
+          ),
+        })),
+
+      updateMessage: (chatId, messageId, content) =>
+        set((state) => ({
+          chats: state.chats.map((chat) =>
+            chat.id === chatId
+              ? {
+                  ...chat,
+                  messages: chat.messages.map((message) =>
+                    message.id === messageId
+                      ? { ...message, content, timestamp: message.timestamp }
+                      : message
+                  ),
+                  lastMessage: content.slice(0, 50),
                 }
               : chat
           ),

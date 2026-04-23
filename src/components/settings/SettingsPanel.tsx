@@ -1,44 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Settings } from '../../types/settings';
-
-const defaultSettings: Settings = {
-  theme: 'light',
-};
+import { loadSettings, saveSettings, Settings } from '../../utils/settings';
 
 const SettingsPanel: React.FC = () => {
   const [model, setModel] = useState('GigaChat');
   const [temperature, setTemperature] = useState(1);
   const [topP, setTopP] = useState(1);
   const [maxTokens, setMaxTokens] = useState(1000);
+  const [repetitionPenalty, setRepetitionPenalty] = useState(1);
   const [systemPrompt, setSystemPrompt] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  // Загрузить сохраненные настройки при монтировании
   useEffect(() => {
-    const savedSettings = localStorage.getItem('settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setModel(settings.model || 'GigaChat');
-      setTemperature(settings.temperature ?? 1);
-      setTopP(settings.topP ?? 1);
-      setMaxTokens(settings.maxTokens ?? 1000);
-      setSystemPrompt(settings.systemPrompt || '');
-      setTheme(settings.theme || 'light');
-      document.body.className = settings.theme || 'light';
-    }
+    const settings = loadSettings();
+    setModel(settings.model);
+    setTemperature(settings.temperature);
+    setTopP(settings.topP);
+    setMaxTokens(settings.maxTokens);
+    setRepetitionPenalty(settings.repetitionPenalty);
+    setSystemPrompt(settings.systemPrompt);
+    setTheme(settings.theme);
+    document.body.classList.remove('light', 'dark');
+    document.body.classList.add(settings.theme);
   }, []);
 
   const handleSave = () => {
-    const settings = {
+    const settings: Settings = {
       model,
       temperature,
       topP,
       maxTokens,
+      repetitionPenalty,
       systemPrompt,
       theme,
     };
-    localStorage.setItem('settings', JSON.stringify(settings));
-    document.body.className = theme;
+    saveSettings(settings);
+    document.body.classList.remove('light', 'dark');
+    document.body.classList.add(theme);
     console.log('Настройки сохранены:', settings);
   };
 
@@ -47,6 +44,7 @@ const SettingsPanel: React.FC = () => {
     setTemperature(1);
     setTopP(1);
     setMaxTokens(1000);
+    setRepetitionPenalty(1);
     setSystemPrompt('');
     setTheme('light');
   };
@@ -83,6 +81,17 @@ const SettingsPanel: React.FC = () => {
           step={0.01}
           value={topP}
           onChange={(e) => setTopP(+e.target.value)}
+        />
+      </label>
+      <label>
+        Repetition penalty: {repetitionPenalty.toFixed(2)}
+        <input
+          type="range"
+          min={0.1}
+          max={2}
+          step={0.01}
+          value={repetitionPenalty}
+          onChange={(e) => setRepetitionPenalty(+e.target.value)}
         />
       </label>
       <label>

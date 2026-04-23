@@ -70,13 +70,28 @@ app.post('/api/chat', async (req, res) => {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream',
       },
       body: JSON.stringify(req.body),
       agent: new https.Agent({ rejectUnauthorized: false }),
     });
 
     if (!response.ok) {
-      throw new Error(`Chat failed: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Chat failed: ${response.status} ${response.statusText}: ${errorText}`);
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    res.status(response.status);
+    if (contentType) {
+      res.setHeader('Content-Type', contentType);
+    }
+
+    if (req.body.stream === true && response.body) {
+      res.setHeader('Cache-Control', 'no-cache');
+      res.flushHeaders();
+      response.body.pipe(res);
+      return;
     }
 
     const data = await response.json();

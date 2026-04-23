@@ -49,7 +49,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
                 ...chat,
                 messages: [...chat.messages, action.payload.message],
                 lastMessage: action.payload.message.content.slice(0, 50),
-                lastMessageDate: action.payload.message.timestamp.toISOString(),
+                lastMessageDate: action.payload.message.timestamp,
               }
             : chat
         ),

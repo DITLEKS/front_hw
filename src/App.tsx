@@ -3,15 +3,18 @@ import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './app/router/routes';
 import AuthForm from './components/auth/AuthForm';
 import Toggle from './components/ui/Toggle';
+import { loadSettings, saveSettings } from './utils/settings';
 
 const App: React.FC = () => {
   const [authorized, setAuthorized] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => loadSettings().theme);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.body.classList.remove('light', 'dark');
     document.body.classList.add(theme);
+    const settings = loadSettings();
+    saveSettings({ ...settings, theme });
   }, [theme]);
 
   const toggleTheme = () => {

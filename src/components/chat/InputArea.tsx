@@ -2,13 +2,15 @@ import React, { useState, useRef, KeyboardEvent } from 'react';
 
 interface InputAreaProps {
   onSend: (content: string) => Promise<void>;
+  onAttachImage: (image: { url: string; alt: string; mimeType: string }) => void;
   isLoading: boolean;
   onStop: () => void;
 }
 
-const InputArea: React.FC<InputAreaProps> = ({ onSend, isLoading, onStop }) => {
+const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading, onStop }) => {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
@@ -16,6 +18,29 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, isLoading, onStop }) => {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
+  };
+
+  const handleAttach = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      const markdown = `![${file.name}](${base64})`;
+      setValue((prev) => `${prev}${prev ? '\n\n' : ''}${markdown}`);
+      onAttachImage({ url: base64, alt: file.name, mimeType: file.type });
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const handleSend = async () => {
@@ -47,8 +72,15 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, isLoading, onStop }) => {
         onKeyDown={handleKeyDown}
         disabled={isLoading}
       />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
       <div className="controls">
-        <button className="attach" aria-label="Attach image" disabled={isLoading}>
+        <button className="attach" aria-label="Attach image" disabled={isLoading} onClick={handleAttach} type="button">
           📎
         </button>
         {isLoading ? (
