@@ -40,9 +40,11 @@ cd front_hw
 # 2. Установить зависимости
 npm install --legacy-peer-deps
 
-# 3. Создать файл переменных окружения
+# 3. Настроить переменные окружения
 cp .env.example .env
-# Откройте .env и заполните своими данными GigaChat
+# Откройте .env и заполните:
+# - REACT_APP_API_BASE_URL: URL вашего сервера (по умолчанию http://localhost:3002)
+# - GIGACHAT_TOKEN: Base64-encoded client_id:client_secret для OAuth
 
 # 4. Запустить прокси-сервер (в отдельном терминале)
 npm run server
@@ -68,10 +70,10 @@ npm start
 ## Оптимизации
 
 - **React.lazy + Suspense** — `ChatWindow`, `SettingsPanel`, `Sidebar` загружаются отдельными JS-чанками
-- **React.memo** — `ChatItem` не перерисовывается при изменении другого чата
-- **useMemo** — фильтрация чатов в поиске не пересчитывается без изменений
-- **useCallback** — обработчики `handleSend`, `handleDelete`, `handleEdit` мемоизированы
-- **ErrorBoundary** — ошибки в области сообщений не ломают сайдбар, есть кнопка «Повторить»
+- **React.memo** - `ChatItem` не перерисовывается при изменении другого чата
+- **useMemo** - фильтрация чатов в поиске не пересчитывается без изменений
+- **useCallback** - обработчики `handleSend`, `handleDelete`, `handleEdit` мемоизированы
+- **ErrorBoundary** - ошибки в области сообщений не ломают сайдбар, есть кнопка «Повторить»
 
 ---
 

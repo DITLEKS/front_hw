@@ -1,60 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { loadSettings, saveSettings, Settings } from '../../utils/settings';
+import React, { useState, useEffect, useCallback } from 'react';
+import { loadSettings, saveSettings } from '../../utils/settings';
+import { Settings } from '../../types/settings';
 
-const SettingsPanel: React.FC = () => {
-  const [model, setModel] = useState('GigaChat');
-  const [temperature, setTemperature] = useState(1);
-  const [topP, setTopP] = useState(1);
-  const [maxTokens, setMaxTokens] = useState(1000);
-  const [repetitionPenalty, setRepetitionPenalty] = useState(1);
-  const [systemPrompt, setSystemPrompt] = useState('');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+interface SettingsPanelProps {
+  onClose: () => void;
+}
+
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
+  const [settings, setSettings] = useState<Settings>({
+    model: 'GigaChat',
+    temperature: 1,
+    topP: 1,
+    maxTokens: 1000,
+    repetitionPenalty: 1,
+    systemPrompt: '',
+    theme: 'light',
+  });
 
   useEffect(() => {
-    const settings = loadSettings();
-    setModel(settings.model);
-    setTemperature(settings.temperature);
-    setTopP(settings.topP);
-    setMaxTokens(settings.maxTokens);
-    setRepetitionPenalty(settings.repetitionPenalty);
-    setSystemPrompt(settings.systemPrompt);
-    setTheme(settings.theme);
+    const loadedSettings = loadSettings();
+    setSettings(loadedSettings);
     document.body.classList.remove('light', 'dark');
-    document.body.classList.add(settings.theme);
+    document.body.classList.add(loadedSettings.theme);
   }, []);
 
-  const handleSave = () => {
-    const settings: Settings = {
-      model,
-      temperature,
-      topP,
-      maxTokens,
-      repetitionPenalty,
-      systemPrompt,
-      theme,
-    };
+  const handleSave = useCallback(() => {
     saveSettings(settings);
     document.body.classList.remove('light', 'dark');
-    document.body.classList.add(theme);
+    document.body.classList.add(settings.theme);
     console.log('Настройки сохранены:', settings);
-  };
+    onClose();
+  }, [settings, onClose]);
 
-  const handleReset = () => {
-    setModel('GigaChat');
-    setTemperature(1);
-    setTopP(1);
-    setMaxTokens(1000);
-    setRepetitionPenalty(1);
-    setSystemPrompt('');
-    setTheme('light');
-  };
+  const handleReset = useCallback(() => {
+    const defaultSettings: Settings = {
+      model: 'GigaChat',
+      temperature: 1,
+      topP: 1,
+      maxTokens: 1000,
+      repetitionPenalty: 1,
+      systemPrompt: '',
+      theme: 'light',
+    };
+    setSettings(defaultSettings);
+  }, []);
+
+  const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  }, []);
 
   return (
     <div className="settings-panel">
       <h3>Настройки</h3>
       <label>
         Модель:
-        <select value={model} onChange={(e) => setModel(e.target.value)}>
+        <select value={settings.model} onChange={(e) => updateSetting('model', e.target.value)}>
           <option>GigaChat</option>
           <option>GigaChat-Plus</option>
           <option>GigaChat-Pro</option>
@@ -62,56 +62,61 @@ const SettingsPanel: React.FC = () => {
         </select>
       </label>
       <label>
-        Температура: {temperature.toFixed(2)}
+        Температура: {settings.temperature.toFixed(2)}
         <input
           type="range"
           min={0}
           max={2}
           step={0.01}
-          value={temperature}
-          onChange={(e) => setTemperature(+e.target.value)}
+          value={settings.temperature}
+          onChange={(e) => updateSetting('temperature', +e.target.value)}
         />
       </label>
       <label>
-        Top-P: {topP.toFixed(2)}
+        Top-P: {settings.topP.toFixed(2)}
         <input
           type="range"
           min={0}
           max={1}
           step={0.01}
-          value={topP}
-          onChange={(e) => setTopP(+e.target.value)}
+          value={settings.topP}
+          onChange={(e) => updateSetting('topP', +e.target.value)}
         />
       </label>
       <label>
-        Repetition penalty: {repetitionPenalty.toFixed(2)}
+        Repetition penalty: {settings.repetitionPenalty.toFixed(2)}
         <input
           type="range"
           min={0.1}
           max={2}
           step={0.01}
-          value={repetitionPenalty}
-          onChange={(e) => setRepetitionPenalty(+e.target.value)}
+          value={settings.repetitionPenalty}
+          onChange={(e) => updateSetting('repetitionPenalty', +e.target.value)}
         />
       </label>
       <label>
         Макс. токенов:
         <input
           type="number"
-          value={maxTokens}
-          onChange={(e) => setMaxTokens(+e.target.value)}
+          min="1"
+          max="8192"
+          value={settings.maxTokens}
+          onChange={(e) => updateSetting('maxTokens', Math.max(1, Math.min(8192, +e.target.value)))}
+          aria-label="Максимальное количество токенов"
         />
       </label>
       <label>
         Системный промпт:
         <textarea
-          value={systemPrompt}
-          onChange={(e) => setSystemPrompt(e.target.value)}
+          value={settings.systemPrompt}
+          onChange={(e) => updateSetting('systemPrompt', e.target.value)}
+          placeholder="Введите системный промпт..."
+          aria-label="Системный промпт"
         />
       </label>
       <label>
         Тема:
-        <select value={theme} onChange={(e) => setTheme(e.target.value as any)}>
+        <select value={settings.theme} onChange={(e) => updateSetting('theme', e.target.value as 'light' | 'dark')} aria-label="Выбор темы">
           <option value="light">Светлая</option>
           <option value="dark">Тёмная</option>
         </select>

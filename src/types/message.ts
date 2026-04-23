@@ -1,9 +1,13 @@
+export interface MessageImage {
+  url: string;
+  alt?: string;
+  mimeType?: string;
+}
+
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: string;
-  imageUrl?: string;
-  imageAlt?: string;
-  imageMimeType?: string;
+  image?: MessageImage;
 }

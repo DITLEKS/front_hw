@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Message as MessageType } from '../../types/message';
 
 interface MessageProps {
   message: MessageType;
 }
 
-const Message: React.FC<MessageProps> = ({ message }) => {
+const Message: React.FC<MessageProps> = React.memo(({ message }) => {
   const [hover, setHover] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -54,14 +52,11 @@ const Message: React.FC<MessageProps> = ({ message }) => {
               code({ node, inline, className, children, ...props }: any) {
                 const match = /language-(\w+)/.exec(className || '');
                 return !inline && match ? (
-                  <SyntaxHighlighter
-                    style={oneDark as any}
-                    language={match[1]}
-                    PreTag="div"
-                    {...props}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
+                  <pre>
+                    <code className={className} {...props}>
+                      {String(children).replace(/\n$/, '')}
+                    </code>
+                  </pre>
                 ) : (
                   <code className={className} {...props}>
                     {children}
@@ -72,10 +67,13 @@ const Message: React.FC<MessageProps> = ({ message }) => {
           >
             {message.content}
           </ReactMarkdown>
+          {message.image && (
+            <img src={message.image.url} alt={message.image.alt} className="message-image" />
+          )}
         </div>
       </div>
     </div>
   );
-};
+});
 
 export default Message;

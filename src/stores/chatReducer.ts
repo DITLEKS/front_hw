@@ -61,6 +61,24 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case 'SET_ERROR':
       return { ...state, error: action.payload };
 
+    case 'UPDATE_MESSAGE':
+      return {
+        ...state,
+        chats: state.chats.map((chat) =>
+          chat.id === action.payload.chatId
+            ? {
+                ...chat,
+                messages: chat.messages.map((msg) =>
+                  msg.id === action.payload.messageId
+                    ? { ...msg, content: action.payload.content }
+                    : msg
+                ),
+                lastMessage: action.payload.content.slice(0, 50),
+              }
+            : chat
+        ),
+      };
+
     default:
       return state;
   }

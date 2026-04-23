@@ -8,12 +8,6 @@ export interface Chat {
   messages: Message[];
 }
 
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
-
 export interface ChatState {
   chats: Chat[];
   activeChatId: string | null;
@@ -28,5 +22,6 @@ export type ChatAction =
   | { type: 'DELETE_CHAT'; payload: string }
   | { type: 'SET_ACTIVE_CHAT'; payload: string | null }
   | { type: 'ADD_MESSAGE'; payload: { chatId: string; message: Message } }
+  | { type: 'UPDATE_MESSAGE'; payload: { chatId: string; messageId: string; content: string } }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null };

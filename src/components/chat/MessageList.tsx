@@ -8,7 +8,7 @@ interface MessageListProps {
   isLoading: boolean;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
+const MessageList: React.FC<MessageListProps> = React.memo(({ messages, isLoading }) => {
   return (
     <div className="message-list">
       {messages.map((m) => (
@@ -17,6 +17,6 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
       <TypingIndicator isVisible={isLoading} />
     </div>
   );
-};
+});
 
 export default MessageList;

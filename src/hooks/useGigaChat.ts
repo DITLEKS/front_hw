@@ -7,15 +7,14 @@ export type ChatStreamCallback = (chunk: string) => void;
 export const useGigaChat = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const stop = useCallback(() => {
+  const stop = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-  }, []);
+  };
 
-  const sendMessage = useCallback(
-    async (body: GigaChatRequestBody, onChunk: ChatStreamCallback) => {
+  const sendMessage = async (body: GigaChatRequestBody, onChunk: ChatStreamCallback) => {
       stop();
 
       const controller = new AbortController();
@@ -55,7 +54,7 @@ export const useGigaChat = () => {
                 onChunk(content);
               }
             } catch {
-              onChunk(event.data);
+              // Не вызывать onChunk(event.data) — просто пропускаем служебные SSE-события
             }
           }
         }
@@ -68,7 +67,7 @@ export const useGigaChat = () => {
               onChunk(content);
             }
           } catch {
-            onChunk(buffer);
+            // ничего не делать — это не валидный JSON-chunk
           }
         }
       } else {
@@ -78,9 +77,7 @@ export const useGigaChat = () => {
           onChunk(content);
         }
       }
-    },
-    [stop]
-  );
+    };
 
   return { sendMessage, stop };
 };

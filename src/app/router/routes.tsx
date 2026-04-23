@@ -24,7 +24,7 @@ const AppRoutes: React.FC = () => {
             path="/"
             element={
               activeChatId ? (
-                <ChatWindow chatId={activeChatId} />
+                <ChatWindow key={activeChatId} chatId={activeChatId} />
               ) : (
                 <div className="empty-state">
                   <h2>Выберите чат или создайте новый</h2>
@@ -32,7 +32,7 @@ const AppRoutes: React.FC = () => {
               )
             }
           />
-          <Route path="/chat/:id" element={<ChatWindow />} />
+          <Route path="/chat/:id" element={<ChatWindow key={window.location.pathname} />} />
         </Routes>
       </Suspense>
     </AppLayout>

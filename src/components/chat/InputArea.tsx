@@ -45,8 +45,12 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
 
   const handleSend = async () => {
     if (value.trim() && !isLoading) {
-      await onSend(value.trim());
-      setValue('');
+      try {
+        await onSend(value.trim());
+        setValue('');
+      } catch (error) {
+        // Ошибка уже обработана выше
+      }
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
@@ -72,17 +76,20 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
         onKeyDown={handleKeyDown}
         disabled={isLoading}
       />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
       <div className="controls">
-        <button className="attach" aria-label="Attach image" disabled={isLoading} onClick={handleAttach} type="button">
-          📎
-        </button>
+        <label htmlFor="file-input">
+          <button className="attach" aria-label="Attach image" disabled={isLoading} type="button">
+            📎
+          </button>
+        </label>
+        <input
+          id="file-input"
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
         {isLoading ? (
           <button className="stop" onClick={onStop} type="button">
             Стоп

@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
-import TypingIndicator from './TypingIndicator';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import { useChatStore } from '../../stores/chatStore';
 import { Message } from '../../types/message';
-import { useGigaChat } from '../../hooks/useGigaChat';
+import { useChatSender } from '../../hooks/useChatSender';
 import { loadSettings } from '../../utils/settings';
 
 // Ленивая загрузка SettingsPanel
@@ -20,12 +19,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
   const { id: urlChatId } = useParams<{ id: string }>();
   const chatId = propChatId || urlChatId;
 
-  const { chats, activeChatId, addMessage, updateMessage, setLoading, setError, generateChatName, setActiveChat } = useChatStore();
   const [showSettings, setShowSettings] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
   const [attachedImage, setAttachedImage] = useState<{ url: string; alt: string; mimeType: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { sendMessage, stop } = useGigaChat();
+  const { chats, activeChatId, setLoading, setActiveChat } = useChatStore();
+  const { sendChatMessage, stop } = useChatSender();
 
   const chat = chats.find(c => c.id === chatId);
   const messages = chat?.messages || [];
@@ -37,96 +35,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
     }
   }, [chatId, activeChatId, setActiveChat]);
 
-  const handleSend = useCallback(async (content: string) => {
+  const handleSend = async (content: string) => {
     if (!chatId) return;
-    setSendError(null);
-
-    const userMessage: Message = {
-      id: `msg-${Date.now()}`,
-      role: 'user',
-      content,
-      timestamp: new Date().toISOString(),
-      ...(attachedImage ? {
-        imageUrl: attachedImage.url,
-        imageAlt: attachedImage.alt,
-        imageMimeType: attachedImage.mimeType,
-      } : {}),
-    };
-    addMessage(chatId, userMessage);
+    await sendChatMessage(chatId, content, attachedImage || undefined);
     setAttachedImage(null);
-    setLoading(true);
+  };
 
-    const assistantMessageId = `msg-${Date.now() + 1}`;
-    addMessage(chatId, {
-      id: assistantMessageId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date().toISOString(),
-    });
-
-    try {
-      const settings = loadSettings();
-      const messagesForAPI = [...messages, userMessage].map((message) => {
-        if (message.imageUrl) {
-          return {
-            role: message.role,
-            content: {
-              type: 'image',
-              mime_type: message.imageMimeType || 'image/png',
-              alt: message.imageAlt || 'image',
-              data: message.imageUrl,
-            },
-          };
-        }
-
-        return {
-          role: message.role,
-          content: message.content,
-        };
-      });
-
-      if (settings.systemPrompt.trim()) {
-        messagesForAPI.unshift({ role: 'system', content: settings.systemPrompt });
-      }
-
-      let assistantContent = '';
-      await sendMessage(
-        {
-          model: settings.model,
-          messages: messagesForAPI,
-          temperature: settings.temperature,
-          top_p: settings.topP,
-          max_tokens: settings.maxTokens,
-          repetition_penalty: settings.repetitionPenalty,
-          stream: true,
-        },
-        (chunk) => {
-          assistantContent += chunk;
-          updateMessage(chatId, assistantMessageId, assistantContent);
-        }
-      );
-
-      if (messages.length === 0) {
-        generateChatName(chatId);
-      }
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : 'Неизвестная ошибка';
-      setSendError(`Ошибка отправки: ${errMsg}`);
-      setError(errMsg);
-      updateMessage(chatId, assistantMessageId, 'Извините, произошла ошибка при обработке вашего сообщения.');
-    } finally {
-      setLoading(false);
-    }
-  }, [chatId, messages, addMessage, updateMessage, setLoading, setError, generateChatName, sendMessage]);
-
-  const handleStop = useCallback(() => {
+  const handleStop = () => {
     stop();
     setLoading(false);
-  }, [stop, setLoading]);
-
-  const handleRetry = useCallback(() => {
-    setSendError(null);
-  }, []);
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -150,16 +68,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
       <div className="chat-body">
         {/* ErrorBoundary изолирует ошибки рендера сообщений */}
         <ErrorBoundary>
-          <MessageList messages={messages} isLoading={isLoading} />
+          <MessageList key={chatId} messages={messages} isLoading={isLoading} />
         </ErrorBoundary>
         <div ref={scrollRef} />
       </div>
 
       {/* Ошибка API отображается под списком, не ломает интерфейс */}
-      {sendError && (
+      {useChatStore(state => state.error) && (
         <div className="send-error">
-          <span>⚠️ {sendError}</span>
-          <button onClick={handleRetry} className="send-error__retry">Повторить</button>
+          <span>⚠️ {useChatStore(state => state.error)}</span>
+          <button onClick={() => useChatStore.setState({ error: null })}>Закрыть</button>
         </div>
       )}
 
@@ -171,7 +89,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
             <button className="modal-close" onClick={() => setShowSettings(false)}>×</button>
             {/* Suspense + lazy: SettingsPanel загружается только при открытии */}
             <Suspense fallback={<div className="settings-loading">Загрузка настроек…</div>}>
-              <SettingsPanel />
+              <SettingsPanel onClose={() => setShowSettings(false)} />
             </Suspense>
           </div>
         </div>
