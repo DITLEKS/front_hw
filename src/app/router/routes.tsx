@@ -1,9 +1,8 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useParams } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
 import { useChatStore } from '../../stores/chatStore';
 
-// Ленивая загрузка роутов, каждый роут в отдельном чанке
 const ChatWindow = lazy(() => import('../../components/chat/ChatWindow'));
 
 const PageLoader = () => (
@@ -12,6 +11,11 @@ const PageLoader = () => (
     <span>Загрузка…</span>
   </div>
 );
+
+const ChatWindowRoute: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return <ChatWindow key={id} />;
+};
 
 const AppRoutes: React.FC = () => {
   const { activeChatId } = useChatStore();
@@ -32,7 +36,7 @@ const AppRoutes: React.FC = () => {
               )
             }
           />
-          <Route path="/chat/:id" element={<ChatWindow key={window.location.pathname} />} />
+          <Route path="/chat/:id" element={<ChatWindowRoute />} />
         </Routes>
       </Suspense>
     </AppLayout>

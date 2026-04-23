@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Components } from 'react-markdown';
-import { Message as MessageType } from '../../types/message';
+import { Message as MessageType, MessageImage } from '../../types/message';
 
 interface MessageProps {
   message: MessageType;
@@ -46,8 +46,14 @@ const Message: React.FC<MessageProps> = React.memo(({ message }) => {
     }
   };
 
-  const imageSrc = message.image?.url || message.imageUrl;
-  const imageAlt = message.image?.alt || message.imageAlt || 'Прикреплённое изображение';
+  // Нормализуем к массиву: images[] имеет приоритет, иначе собираем из image/imageUrl
+  const resolvedImages: MessageImage[] = message.images && message.images.length > 0
+    ? message.images
+    : message.image
+      ? [message.image]
+      : message.imageUrl
+        ? [{ url: message.imageUrl, alt: message.imageAlt }]
+        : [];
 
   return (
     <div className={`message ${variant}`}>
@@ -67,12 +73,17 @@ const Message: React.FC<MessageProps> = React.memo(({ message }) => {
           )}
         </div>
         <div className="message-content">
-          {imageSrc && (
-            <img
-              src={imageSrc}
-              alt={imageAlt}
-              className="message-image"
-            />
+          {resolvedImages.length > 0 && (
+            <div className={`message-images${resolvedImages.length > 1 ? ' message-images--grid' : ''}`}>
+              {resolvedImages.map((img, index) => (
+                <img
+                  key={index}
+                  src={img.url}
+                  alt={img.alt || 'Прикреплённое изображение'}
+                  className="message-image"
+                />
+              ))}
+            </div>
           )}
           <ReactMarkdown components={{ code: CodeBlock }}>
             {message.content}

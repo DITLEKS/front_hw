@@ -1,22 +1,28 @@
 import React, { useState, useRef, KeyboardEvent } from 'react';
 
+interface AttachedImage {
+  url: string;
+  alt: string;
+  mimeType: string;
+}
+
 interface InputAreaProps {
   onSend: (content: string) => Promise<void>;
-  onAttachImage: (image: { url: string; alt: string; mimeType: string }) => void;
+  onAttachImage: (image: AttachedImage) => void;
   isLoading: boolean;
   onStop: () => void;
 }
 
 const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading, onStop }) => {
   const [value, setValue] = useState('');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<AttachedImage[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resizeTextarea = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
     }
   };
 
@@ -25,26 +31,28 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
     resizeTextarea();
   };
 
-  const handleAttach = () => {
-    fileInputRef.current?.click();
-  };
+  const handleAttach = () => fileInputRef.current?.click();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setImagePreview(base64);
-      onAttachImage({ url: base64, alt: file.name, mimeType: file.type });
-    };
-    reader.readAsDataURL(file);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        const img: AttachedImage = { url: base64, alt: file.name, mimeType: file.type };
+        setImagePreviews(prev => [...prev, img]);
+        onAttachImage(img);
+      };
+      reader.readAsDataURL(file);
+    });
+
     e.target.value = '';
   };
 
-  const handleRemoveImage = () => {
-    setImagePreview(null);
+  const handleRemoveImage = (index: number) => {
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSend = async () => {
@@ -52,12 +60,10 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
       try {
         await onSend(value.trim());
         setValue('');
-        setImagePreview(null);
+        setImagePreviews([]);
+        if (textareaRef.current) textareaRef.current.style.height = 'auto';
       } catch {
         // ошибка обрабатывается в ChatWindow
-      }
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
       }
     }
   };
@@ -69,63 +75,110 @@ const InputArea: React.FC<InputAreaProps> = ({ onSend, onAttachImage, isLoading,
     }
   };
 
+  const canSend = value.trim().length > 0 && !isLoading;
+
   return (
-    <div className="input-area">
-      {imagePreview && (
-        <div className="image-preview">
-          <img src={imagePreview} alt="preview" className="image-preview__img" />
-          <button
-            className="image-preview__remove"
-            onClick={handleRemoveImage}
-            type="button"
-            aria-label="Удалить изображение"
-          >
-            ×
-          </button>
+    <div className="input-wrapper">
+      <div className={`input-box${isLoading ? ' input-box--loading' : ''}`}>
+
+        {/* Превью изображений и горизонтальная полоса */}
+        {imagePreviews.length > 0 && (
+          <div className="input-box__previews">
+            {imagePreviews.map((img, index) => (
+              <div key={index} className="input-box__preview">
+                <img
+                  src={img.url}
+                  alt={img.alt}
+                  className="input-box__preview-img"
+                />
+                <button
+                  className="input-box__preview-remove"
+                  onClick={() => handleRemoveImage(index)}
+                  type="button"
+                  aria-label={`Удалить ${img.alt}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Textarea */}
+        <textarea
+          ref={textareaRef}
+          className="input-box__textarea"
+          rows={1}
+          maxLength={2000}
+          placeholder="Введите сообщение..."
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          disabled={isLoading}
+        />
+
+        {/* Нижняя панель */}
+        <div className="input-box__toolbar">
+          <div className="input-box__toolbar-left">
+            <button
+              className="input-box__icon-btn"
+              aria-label="Прикрепить изображение"
+              disabled={isLoading}
+              onClick={handleAttach}
+              type="button"
+              title="Прикрепить изображение"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="input-box__toolbar-right">
+            {value.length > 0 && !isLoading && (
+              <span className="input-box__hint">Shift+Enter — перенос строки</span>
+            )}
+
+            {isLoading ? (
+              <button
+                className="input-box__stop-btn"
+                onClick={onStop}
+                type="button"
+                aria-label="Остановить генерацию"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="3" y="3" width="18" height="18" rx="3" />
+                </svg>
+                Стоп
+              </button>
+            ) : (
+              <button
+                className={`input-box__send-btn${canSend ? ' input-box__send-btn--active' : ''}`}
+                disabled={!canSend}
+                onClick={handleSend}
+                type="button"
+                aria-label="Отправить сообщение"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
-      )}
-      <textarea
-        ref={textareaRef}
-        rows={1}
-        maxLength={2000}
-        placeholder="Введите сообщение..."
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        disabled={isLoading}
-      />
+      </div>
+
+      {/* multiple позволяет выбрать сразу несколько файлов */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
-      <div className="controls">
-        <button
-          className="attach"
-          aria-label="Прикрепить изображение"
-          disabled={isLoading}
-          onClick={handleAttach}
-          type="button"
-        >
-          📎
-        </button>
-        {isLoading ? (
-          <button className="stop" onClick={onStop} type="button">
-            Стоп
-          </button>
-        ) : (
-          <button
-            className="send"
-            disabled={!value.trim() || isLoading}
-            onClick={handleSend}
-            type="button"
-          >
-            Отправить
-          </button>
-        )}
-      </div>
     </div>
   );
 };

@@ -18,112 +18,102 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   });
 
   useEffect(() => {
-    const loadedSettings = loadSettings();
-    setSettings(loadedSettings);
-    document.body.classList.remove('light', 'dark');
-    document.body.classList.add(loadedSettings.theme);
+    const loaded = loadSettings();
+    setSettings(loaded);
   }, []);
 
   const handleSave = useCallback(() => {
     saveSettings(settings);
-    document.body.classList.remove('light', 'dark');
-    document.body.classList.add(settings.theme);
-    console.log('Настройки сохранены:', settings);
     onClose();
   }, [settings, onClose]);
 
   const handleReset = useCallback(() => {
-    const defaultSettings: Settings = {
+    setSettings({
       model: 'GigaChat',
       temperature: 1,
       topP: 1,
       maxTokens: 1000,
       repetitionPenalty: 1,
       systemPrompt: '',
-      theme: 'light',
-    };
-    setSettings(defaultSettings);
+      theme: loadSettings().theme, // тему не сбрасываем
+    });
   }, []);
 
-  const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
+  const update = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   }, []);
 
   return (
     <div className="settings-panel">
-      <h3>Настройки</h3>
-      <label>
-        Модель:
-        <select value={settings.model} onChange={(e) => updateSetting('model', e.target.value)}>
+      <div className="settings-panel__group">
+        <label className="settings-panel__label">Модель</label>
+        <select
+          className="settings-panel__select"
+          value={settings.model}
+          onChange={(e) => update('model', e.target.value)}
+        >
           <option>GigaChat</option>
           <option>GigaChat-Plus</option>
           <option>GigaChat-Pro</option>
           <option>GigaChat-Max</option>
         </select>
-      </label>
-      <label>
-        Температура: {settings.temperature.toFixed(2)}
+      </div>
+
+      <div className="settings-panel__group">
+        <div className="settings-panel__row">
+          <label className="settings-panel__label">Температура</label>
+          <span className="settings-panel__value">{settings.temperature.toFixed(2)}</span>
+        </div>
+        <input type="range" min={0} max={2} step={0.01} value={settings.temperature}
+          onChange={(e) => update('temperature', +e.target.value)} />
+      </div>
+
+      <div className="settings-panel__group">
+        <div className="settings-panel__row">
+          <label className="settings-panel__label">Top-P</label>
+          <span className="settings-panel__value">{settings.topP.toFixed(2)}</span>
+        </div>
+        <input type="range" min={0} max={1} step={0.01} value={settings.topP}
+          onChange={(e) => update('topP', +e.target.value)} />
+      </div>
+
+      <div className="settings-panel__group">
+        <div className="settings-panel__row">
+          <label className="settings-panel__label">Repetition penalty</label>
+          <span className="settings-panel__value">{settings.repetitionPenalty.toFixed(2)}</span>
+        </div>
+        <input type="range" min={0.1} max={2} step={0.01} value={settings.repetitionPenalty}
+          onChange={(e) => update('repetitionPenalty', +e.target.value)} />
+      </div>
+
+      <div className="settings-panel__group">
+        <label className="settings-panel__label">Макс. токенов</label>
         <input
-          type="range"
-          min={0}
-          max={2}
-          step={0.01}
-          value={settings.temperature}
-          onChange={(e) => updateSetting('temperature', +e.target.value)}
-        />
-      </label>
-      <label>
-        Top-P: {settings.topP.toFixed(2)}
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={settings.topP}
-          onChange={(e) => updateSetting('topP', +e.target.value)}
-        />
-      </label>
-      <label>
-        Repetition penalty: {settings.repetitionPenalty.toFixed(2)}
-        <input
-          type="range"
-          min={0.1}
-          max={2}
-          step={0.01}
-          value={settings.repetitionPenalty}
-          onChange={(e) => updateSetting('repetitionPenalty', +e.target.value)}
-        />
-      </label>
-      <label>
-        Макс. токенов:
-        <input
-          type="number"
-          min="1"
-          max="8192"
+          className="settings-panel__input"
+          type="number" min="1" max="8192"
           value={settings.maxTokens}
-          onChange={(e) => updateSetting('maxTokens', Math.max(1, Math.min(8192, +e.target.value)))}
-          aria-label="Максимальное количество токенов"
+          onChange={(e) => update('maxTokens', Math.max(1, Math.min(8192, +e.target.value)))}
         />
-      </label>
-      <label>
-        Системный промпт:
+      </div>
+
+      <div className="settings-panel__group">
+        <label className="settings-panel__label">Системный промпт</label>
         <textarea
+          className="settings-panel__textarea"
           value={settings.systemPrompt}
-          onChange={(e) => updateSetting('systemPrompt', e.target.value)}
+          onChange={(e) => update('systemPrompt', e.target.value)}
           placeholder="Введите системный промпт..."
-          aria-label="Системный промпт"
+          rows={3}
         />
-      </label>
-      <label>
-        Тема:
-        <select value={settings.theme} onChange={(e) => updateSetting('theme', e.target.value as 'light' | 'dark')} aria-label="Выбор темы">
-          <option value="light">Светлая</option>
-          <option value="dark">Тёмная</option>
-        </select>
-      </label>
-      <div className="buttons">
-        <button onClick={handleSave}>Сохранить</button>
-        <button onClick={handleReset}>Сбросить</button>
+      </div>
+
+      <div className="settings-panel__actions">
+        <button className="settings-panel__btn settings-panel__btn--primary" onClick={handleSave}>
+          Сохранить
+        </button>
+        <button className="settings-panel__btn settings-panel__btn--ghost" onClick={handleReset}>
+          Сбросить
+        </button>
       </div>
     </div>
   );

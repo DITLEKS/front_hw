@@ -8,6 +8,12 @@ import { useChatSender } from '../../hooks/useChatSender';
 
 const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
 
+interface AttachedImage {
+  url: string;
+  alt: string;
+  mimeType: string;
+}
+
 interface ChatWindowProps {
   chatId?: string;
 }
@@ -17,7 +23,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
   const chatId = propChatId || urlChatId;
 
   const [showSettings, setShowSettings] = useState(false);
-  const [attachedImage, setAttachedImage] = useState<{ url: string; alt: string; mimeType: string } | null>(null);
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
   const chatBodyRef = useRef<HTMLDivElement>(null);
 
   const { chats, activeChatId, setLoading, setActiveChat } = useChatStore();
@@ -44,8 +50,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
 
   const handleSend = async (content: string) => {
     if (!chatId) return;
-    await sendChatMessage(chatId, content, attachedImage || undefined);
-    setAttachedImage(null);
+    await sendChatMessage(chatId, content, attachedImages.length > 0 ? attachedImages : undefined);
+    setAttachedImages([]);
+  };
+
+  const handleAttachImage = (img: AttachedImage) => {
+    setAttachedImages((prev) => [...prev, img]);
   };
 
   const handleStop = () => {
@@ -81,7 +91,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
 
       <InputArea
         onSend={handleSend}
-        onAttachImage={setAttachedImage}
+        onAttachImage={handleAttachImage}
         isLoading={isLoading}
         onStop={handleStop}
       />
