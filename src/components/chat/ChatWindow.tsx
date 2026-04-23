@@ -4,7 +4,6 @@ import MessageList from './MessageList';
 import InputArea from './InputArea';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import { useChatStore } from '../../stores/chatStore';
-import { Message } from '../../types/message';
 import { useChatSender } from '../../hooks/useChatSender';
 
 const SettingsPanel = lazy(() => import('../settings/SettingsPanel'));
@@ -92,7 +91,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
           <div className="settings-modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setShowSettings(false)}>×</button>
             <Suspense fallback={<div className="settings-loading">Загрузка настроек…</div>}>
-              <SettingsPanel />
+              <SettingsPanel onClose={() => setShowSettings(false)} />
             </Suspense>
           </div>
         </div>

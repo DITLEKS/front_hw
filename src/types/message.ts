@@ -10,4 +10,6 @@ export interface Message {
   content: string;
   timestamp: string;
   image?: MessageImage;
+  imageUrl?: string;
+  imageAlt?: string;
 }

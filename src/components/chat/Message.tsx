@@ -46,6 +46,9 @@ const Message: React.FC<MessageProps> = React.memo(({ message }) => {
     }
   };
 
+  const imageSrc = message.image?.url || message.imageUrl;
+  const imageAlt = message.image?.alt || message.imageAlt || 'Прикреплённое изображение';
+
   return (
     <div className={`message ${variant}`}>
       <div className="message-bubble">
@@ -64,10 +67,10 @@ const Message: React.FC<MessageProps> = React.memo(({ message }) => {
           )}
         </div>
         <div className="message-content">
-          {message.imageUrl && (
+          {imageSrc && (
             <img
-              src={message.imageUrl}
-              alt={message.imageAlt || 'Прикреплённое изображение'}
+              src={imageSrc}
+              alt={imageAlt}
               className="message-image"
             />
           )}
