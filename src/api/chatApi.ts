@@ -75,3 +75,20 @@ export const sendChatRequest = async (
   }
   throw new Error('Не удалось выполнить запрос после всех попыток');
 };
+
+export const fetchModels = async (): Promise<string[]> => {
+  const response = await fetch(`${apiBaseUrl}/api/models`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Не удалось получить список моделей: ${response.status}`);
+  }
+
+  const data = await response.json();
+  // GigaChat возвращает { data: [{ id: 'GigaChat', object: 'model', ... }] }
+  return data.data?.map((m: { id: string }) => m.id) ?? [];
+};

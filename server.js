@@ -7,10 +7,10 @@ require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 if (!process.env.GIGACHAT_TOKEN) {
-  console.error('❌ GIGACHAT_TOKEN не задан в .env файле');
+  console.error('GIGACHAT_TOKEN не задан в .env файле');
   process.exit(1);
 }
 
@@ -43,7 +43,7 @@ async function getAccessToken() {
   const data = await response.json();
   accessToken = data.access_token;
   tokenExpiresAt = data.expires_at;
-  console.log('✅ Token refreshed, expires at:', new Date(tokenExpiresAt).toISOString());
+  console.log('Token refreshed, expires at:', new Date(tokenExpiresAt).toISOString());
   return accessToken;
 }
 
@@ -100,11 +100,36 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+app.get('/api/models', async (req, res) => {
+  try {
+    const token = await getAccessToken();
+    const response = await fetch('https://gigachat.devices.sberbank.ru/api/v1/models', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+      agent: new https.Agent({ rejectUnauthorized: false }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Models failed: ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Models error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', tokenValid: accessToken && Date.now() < tokenExpiresAt });
 });
 
 const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
-  console.log(`✅ Proxy server running on port ${PORT}`);
+  console.log(`Proxy server running on port ${PORT}`);
 });

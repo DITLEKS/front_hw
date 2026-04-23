@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { loadSettings, saveSettings } from '../../utils/settings';
 import { Settings } from '../../types/settings';
+import { fetchModels } from '../../api/chatApi';
 
 interface SettingsPanelProps {
   onClose: () => void;
 }
+
+const FALLBACK_MODELS = ['GigaChat', 'GigaChat-Plus', 'GigaChat-Pro', 'GigaChat-Max'];
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   const [settings, setSettings] = useState<Settings>({
@@ -16,10 +19,19 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
     systemPrompt: '',
     theme: 'light',
   });
+  const [models, setModels] = useState<string[]>(FALLBACK_MODELS);
+  const [modelsLoading, setModelsLoading] = useState(true);
 
   useEffect(() => {
     const loaded = loadSettings();
     setSettings(loaded);
+  }, []);
+
+  useEffect(() => {
+    fetchModels()
+      .then(setModels)
+      .catch(() => setModels(FALLBACK_MODELS))
+      .finally(() => setModelsLoading(false));
   }, []);
 
   const handleSave = useCallback(() => {
@@ -35,7 +47,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
       maxTokens: 1000,
       repetitionPenalty: 1,
       systemPrompt: '',
-      theme: loadSettings().theme, // тему не сбрасываем
+      theme: loadSettings().theme,
     });
   }, []);
 
@@ -51,11 +63,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
           className="settings-panel__select"
           value={settings.model}
           onChange={(e) => update('model', e.target.value)}
+          disabled={modelsLoading}
         >
-          <option>GigaChat</option>
-          <option>GigaChat-Plus</option>
-          <option>GigaChat-Pro</option>
-          <option>GigaChat-Max</option>
+          {modelsLoading
+            ? <option>Загрузка...</option>
+            : models.map(m => <option key={m} value={m}>{m}</option>)
+          }
         </select>
       </div>
 
