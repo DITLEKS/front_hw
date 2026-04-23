@@ -2,11 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './app/router/routes';
 import AuthForm from './components/auth/AuthForm';
-import Toggle from './components/ui/Toggle';
 import { loadSettings, saveSettings } from './utils/settings';
 
 const App: React.FC = () => {
-  const [authorized, setAuthorized] = useState(false);
+  const [authorized, setAuthorized] = useState<boolean>(() => {
+    try {
+      return !!localStorage.getItem('auth');
+    } catch {
+      return false;
+    }
+  });
+
   const [theme, setTheme] = useState<'light' | 'dark'>(() => loadSettings().theme);
 
   useEffect(() => {
@@ -17,19 +23,12 @@ const App: React.FC = () => {
     saveSettings({ ...settings, theme });
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
   if (!authorized) {
     return <AuthForm onLogin={() => setAuthorized(true)} />;
   }
 
   return (
     <BrowserRouter>
-      <div className="top-controls">
-        <Toggle theme={theme} onToggle={toggleTheme} />
-      </div>
       <AppRoutes />
     </BrowserRouter>
   );

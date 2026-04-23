@@ -46,7 +46,7 @@ describe('Message – variant="user"', () => {
 
   it('НЕ содержит кнопку «Копировать»', () => {
     render(<Message message={makeMessage({ role: 'user' })} />);
-    expect(screen.queryByLabelText('Copy message')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Скопировать сообщение')).not.toBeInTheDocument();
   });
 });
 
@@ -75,17 +75,17 @@ describe('Message – variant="assistant"', () => {
     expect(screen.getByText('GigaChat')).toBeInTheDocument();
   });
 
-  it('содержит кнопку «Копировать» (aria-label="Copy message")', () => {
+  it('содержит кнопку «Копировать» (aria-label="Скопировать сообщение")', () => {
     render(<Message message={makeMessage({ role: 'assistant' })} />);
-    expect(screen.getByLabelText('Copy message')).toBeInTheDocument();
+    expect(screen.getByLabelText('Скопировать сообщение')).toBeInTheDocument();
   });
 
   it('кнопка «Копировать» присутствует только у assistant, не у user', () => {
     const { rerender } = render(<Message message={makeMessage({ role: 'user' })} />);
-    expect(screen.queryByLabelText('Copy message')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Скопировать сообщение')).not.toBeInTheDocument();
 
     rerender(<Message message={makeMessage({ role: 'assistant' })} />);
-    expect(screen.getByLabelText('Copy message')).toBeInTheDocument();
+    expect(screen.getByLabelText('Скопировать сообщение')).toBeInTheDocument();
   });
 
   it('после клика на «Копировать» показывается «✅ Скопировано»', async () => {
@@ -95,7 +95,7 @@ describe('Message – variant="assistant"', () => {
     });
 
     render(<Message message={makeMessage({ role: 'assistant' })} />);
-    const btn = screen.getByLabelText('Copy message');
+    const btn = screen.getByLabelText('Скопировать сообщение');
     fireEvent.click(btn);
     // Ждём обновления состояния
     expect(await screen.findByText('✅ Скопировано')).toBeInTheDocument();

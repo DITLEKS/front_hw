@@ -18,6 +18,8 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     <div className="app-layout">
       <button
         className="burger"
+        type="button"
+        aria-label="Открыть меню"
         onClick={() => setSidebarVisible((v) => !v)}
       >
         ☰

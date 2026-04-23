@@ -13,6 +13,7 @@ interface ChatStore extends ChatState {
   updateMessage: (chatId: string, messageId: string, content: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  clearError: () => void;
   generateChatName: (chatId: string) => void;
 }
 
@@ -53,6 +54,9 @@ export const useChatStore = create<ChatStore>()(
 
       setError: (error) =>
         set((state) => chatReducer(state, { type: 'SET_ERROR', payload: error })),
+
+      clearError: () =>
+        set((state) => chatReducer(state, { type: 'SET_ERROR', payload: null })),
 
       generateChatName: (chatId) => {
         const chat = get().chats.find((c) => c.id === chatId);

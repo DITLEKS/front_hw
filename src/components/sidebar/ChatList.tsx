@@ -10,7 +10,7 @@ interface ChatListProps {
   onDelete: (chatId: string) => void;
 }
 
-const ChatList: React.FC<ChatListProps> = ({ chats, activeId, onSelect, onEdit, onDelete }) => {
+const ChatList: React.FC<ChatListProps> = React.memo(({ chats, activeId, onSelect, onEdit, onDelete }) => {
   if (chats.length === 0) {
     return (
       <div className="chat-list">
@@ -34,5 +34,7 @@ const ChatList: React.FC<ChatListProps> = ({ chats, activeId, onSelect, onEdit, 
     </div>
   );
 };
+
+ChatList.displayName = 'ChatList';
 
 export default ChatList;

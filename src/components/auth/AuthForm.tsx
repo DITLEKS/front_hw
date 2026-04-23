@@ -1,34 +1,39 @@
 import React, { useState } from 'react';
 
+type Scope = 'GIGACHAT_API_PERS' | 'GIGACHAT_API_B2B' | 'GIGACHAT_API_CORP';
+
 interface AuthFormProps {
   onLogin?: () => void;
 }
 
+const SCOPES: { value: Scope; label: string }[] = [
+  { value: 'GIGACHAT_API_PERS', label: 'Personal (PERS)' },
+  { value: 'GIGACHAT_API_B2B',  label: 'Business (B2B)'  },
+  { value: 'GIGACHAT_API_CORP', label: 'Corporate (CORP)' },
+];
+
 const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
-  const [login, setLogin] = useState('');
-  const [password, setPassword] = useState('');
+  const [credentials, setCredentials] = useState('');
+  const [scope, setScope] = useState<Scope>('GIGACHAT_API_PERS');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!login.trim()) {
-      setError('Пожалуйста, введите логин');
+    if (!credentials.trim()) {
+      setError('Пожалуйста, введите Credentials (Base64)');
       return;
     }
 
-    if (!password.trim()) {
-      setError('Пожалуйста, введите пароль');
-      return;
+    // Сохраняем авторизацию чтобы не логиниться после перезагрузки
+    try {
+      localStorage.setItem('auth', JSON.stringify({ credentials, scope }));
+    } catch {
+      // ignore
     }
 
-    if (password.length < 6) {
-      setError('Пароль должен содержать минимум 6 символов');
-      return;
-    }
-
-    onLogin && onLogin();
+    onLogin?.();
   };
 
   return (
@@ -37,33 +42,39 @@ const AuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
         <h1>GigaChat</h1>
         <h2>Войти в аккаунт</h2>
 
-        <label htmlFor="login">
-          Логин:
+        <label htmlFor="credentials">
+          Credentials (Base64):
           <input
-            id="login"
-            type="text"
-            value={login}
-            onChange={(e) => { setLogin(e.target.value); setError(''); }}
-            placeholder="Введите ваш логин"
+            id="credentials"
+            type="password"
+            value={credentials}
+            onChange={(e) => { setCredentials(e.target.value); setError(''); }}
+            placeholder="Base64(ClientId:ClientSecret)"
+            autoComplete="current-password"
           />
         </label>
 
-        <label htmlFor="password">
-          Пароль:
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => { setPassword(e.target.value); setError(''); }}
-            placeholder="Введите ваш пароль"
-          />
-        </label>
+        <fieldset className="auth-scope">
+          <legend>Scope</legend>
+          {SCOPES.map(({ value, label }) => (
+            <label key={value} className="auth-scope__option">
+              <input
+                type="radio"
+                name="scope"
+                value={value}
+                checked={scope === value}
+                onChange={() => setScope(value)}
+              />
+              {label}
+            </label>
+          ))}
+        </fieldset>
 
         {error && <div className="error-text">{error}</div>}
 
         <button type="submit" className="submit-btn">Войти</button>
 
-        <p className="demo-text">любые логин и пароль (мин. 6 символов)</p>
+        <p className="demo-text">Введите ваши Credentials от GigaChat API</p>
       </div>
     </form>
   );

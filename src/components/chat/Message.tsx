@@ -51,9 +51,7 @@ const Message: React.FC<MessageProps> = React.memo(({ message }) => {
     ? message.images
     : message.image
       ? [message.image]
-      : message.imageUrl
-        ? [{ url: message.imageUrl, alt: message.imageAlt }]
-        : [];
+      : [];
 
   return (
     <div className={`message ${variant}`}>

@@ -31,7 +31,7 @@ export const useChatSender = () => {
     const messagesBefore = useChatStore.getState().chats.find(c => c.id === chatId)?.messages.length ?? 0;
 
     const userMessage: Message = {
-      id: `msg-${Date.now()}`,
+      id: crypto.randomUUID(),
       role: 'user',
       content,
       timestamp: new Date().toISOString(),
@@ -51,7 +51,7 @@ export const useChatSender = () => {
     addMessage(chatId, userMessage);
     setLoading(true);
 
-    const assistantMessageId = `msg-${Date.now() + 1}`;
+    const assistantMessageId = crypto.randomUUID();
     addMessage(chatId, {
       id: assistantMessageId,
       role: 'assistant',

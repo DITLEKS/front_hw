@@ -10,7 +10,5 @@ export interface Message {
   content: string;
   timestamp: string;
   image?: MessageImage;
-  images?: MessageImage[]; 
-  imageUrl?: string;
-  imageAlt?: string;
+  images?: MessageImage[];
 }

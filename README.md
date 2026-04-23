@@ -87,4 +87,10 @@ npm test
 CI=true npm test -- --watchAll=false
 ```
 
-Покрыто 53 тестами: reducer, localStorage, InputArea, Message, Sidebar.
+### Что покрыто тестами:
+- **chatReducer** — ADD_CHAT, ADD_MESSAGE, DELETE_CHAT, UPDATE_CHAT, SET_ACTIVE_CHAT
+- **InputArea** — отправка по кнопке и Enter, блокировка пустого ввода, кнопка Стоп
+- **Message** — рендер для user/assistant, кнопка копирования только у assistant
+- **Sidebar** — поиск по названию/содержимому, удаление через Dialog, переименование
+- **SettingsPanel** — рендер, сохранение, сброс, смена модели
+- **settings utils** — localStorage: сохранение, восстановление, битые данные

@@ -1,13 +1,16 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-
-// Моки
 
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+}));
+
+jest.mock('../../utils/settings', () => ({
+  loadSettings: jest.fn(() => ({ theme: 'light' })),
+  saveSettings: jest.fn(),
 }));
 
 const mockCreateChat = jest.fn();
@@ -34,15 +37,12 @@ jest.mock('../../stores/chatStore', () => ({
 
 import Sidebar from './Sidebar';
 
-
 beforeEach(() => {
   mockCreateChat.mockReturnValue('new-chat-id');
   mockNavigate.mockReset();
   mockDeleteChat.mockReset();
   mockUpdateChat.mockReset();
   mockSetActiveChat.mockReset();
-  window.confirm = jest.fn(() => true);
-  window.prompt  = jest.fn(() => 'Новое имя');
 });
 
 describe('Sidebar – рендер', () => {
@@ -94,7 +94,7 @@ describe('Sidebar – поиск', () => {
     expect(screen.queryByText('Рабочий чат')).not.toBeInTheDocument();
   });
 
-  it('поиск также работает по lastMessage', async () => {
+  it('поиск работает по lastMessage', async () => {
     render(<Sidebar />);
     await userEvent.type(screen.getByPlaceholderText('Поиск...'), 'Привет');
     expect(screen.getByText('Первый чат')).toBeInTheDocument();
@@ -103,24 +103,45 @@ describe('Sidebar – поиск', () => {
 });
 
 describe('Sidebar – удаление', () => {
-  it('при клике на «Удалить» появляется window.confirm', () => {
+  it('при клике на кнопку удаления открывается диалог подтверждения', () => {
     render(<Sidebar />);
-    fireEvent.click(screen.getAllByLabelText('Delete chat')[0]);
-    expect(window.confirm).toHaveBeenCalledWith('Удалить чат?');
+    const deleteBtns = screen.getAllByLabelText('Удалить чат');
+    fireEvent.click(deleteBtns[0]);
+    // Dialog показывает заголовок "Удалить чат?"
+    expect(screen.getByText('Удалить чат?')).toBeInTheDocument();
   });
 
-  it('при подтверждении вызывается deleteChat', () => {
-    window.confirm = jest.fn(() => true);
+  it('при подтверждении в диалоге вызывается deleteChat', () => {
     render(<Sidebar />);
-    fireEvent.click(screen.getAllByLabelText('Delete chat')[0]);
-    expect(mockDeleteChat).toHaveBeenCalled();
+    fireEvent.click(screen.getAllByLabelText('Удалить чат')[0]);
+    // Нажимаем кнопку "Удалить" в Dialog
+    fireEvent.click(screen.getByText('Удалить'));
+    expect(mockDeleteChat).toHaveBeenCalledWith('chat-1');
   });
 
-  it('при отмене deleteChat не вызывается', () => {
-    window.confirm = jest.fn(() => false);
+  it('при отмене в диалоге deleteChat не вызывается', () => {
     render(<Sidebar />);
-    fireEvent.click(screen.getAllByLabelText('Delete chat')[0]);
+    fireEvent.click(screen.getAllByLabelText('Удалить чат')[0]);
+    fireEvent.click(screen.getByText('Отмена'));
     expect(mockDeleteChat).not.toHaveBeenCalled();
+  });
+});
+
+describe('Sidebar – переименование', () => {
+  it('при клике на кнопку редактирования открывается диалог переименования', () => {
+    render(<Sidebar />);
+    const editBtns = screen.getAllByLabelText('Переименовать чат');
+    fireEvent.click(editBtns[0]);
+    expect(screen.getByText('Переименовать чат')).toBeInTheDocument();
+  });
+
+  it('при сохранении нового имени вызывается updateChat', () => {
+    render(<Sidebar />);
+    fireEvent.click(screen.getAllByLabelText('Переименовать чат')[0]);
+    const input = screen.getByDisplayValue('Первый чат');
+    fireEvent.change(input, { target: { value: 'Обновлённый чат' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+    expect(mockUpdateChat).toHaveBeenCalledWith('chat-1', { name: 'Обновлённый чат' });
   });
 });
 

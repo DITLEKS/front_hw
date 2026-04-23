@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useCallback } from 'react';
 import { sendChatRequest, GigaChatRequestBody } from '../api/chatApi';
 import { parseSseEvents } from '../utils/sse';
 
@@ -7,14 +7,14 @@ export type ChatStreamCallback = (chunk: string) => void;
 export const useGigaChat = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const stop = () => {
+  const stop = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-  };
+  }, []);
 
-  const sendMessage = async (body: GigaChatRequestBody, onChunk: ChatStreamCallback) => {
+  const sendMessage = useCallback(async (body: GigaChatRequestBody, onChunk: ChatStreamCallback) => {
     stop();
 
     const controller = new AbortController();
@@ -81,7 +81,7 @@ export const useGigaChat = () => {
         onChunk(content);
       }
     }
-  };
+  }, [stop]);
 
   return { sendMessage, stop };
 };

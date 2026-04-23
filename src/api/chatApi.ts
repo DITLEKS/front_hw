@@ -33,6 +33,23 @@ export interface GigaChatResponse {
 
 export const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3002';
 
+// Вспомогательная функция — безопасная комбинация AbortSignal
+function combineSignals(signals: AbortSignal[]): AbortSignal {
+  if (typeof (AbortSignal as any).any === 'function') {
+    return (AbortSignal as any).any(signals) as AbortSignal;
+  }
+  // Fallback для старых браузеров: используем первый сигнал (обычно пользовательский)
+  const controller = new AbortController();
+  for (const signal of signals) {
+    if (signal.aborted) {
+      controller.abort();
+      break;
+    }
+    signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  return controller.signal;
+}
+
 export const sendChatRequest = async (
   body: GigaChatRequestBody,
   signal?: AbortSignal,
@@ -42,7 +59,7 @@ export const sendChatRequest = async (
     try {
       const timeoutSignal = AbortSignal.timeout(30000);
       const combinedSignal = signal
-        ? (AbortSignal as any).any([signal, timeoutSignal]) as AbortSignal
+        ? combineSignals([signal, timeoutSignal])
         : timeoutSignal;
 
       const response = await fetch(`${apiBaseUrl}/api/chat`, {

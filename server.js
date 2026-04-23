@@ -43,7 +43,6 @@ async function getAccessToken() {
   const data = await response.json();
   accessToken = data.access_token;
   tokenExpiresAt = data.expires_at;
-  console.log('Token refreshed, expires at:', new Date(tokenExpiresAt).toISOString());
   return accessToken;
 }
 
@@ -61,7 +60,6 @@ app.post('/api/chat', async (req, res) => {
   try {
     const token = await getAccessToken();
 
-    console.log('Sending chat request...');
     const response = await fetch('https://gigachat.devices.sberbank.ru/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -92,7 +90,6 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const data = await response.json();
-    console.log('Chat response received');
     res.json(data);
   } catch (error) {
     console.error('Chat error:', error);

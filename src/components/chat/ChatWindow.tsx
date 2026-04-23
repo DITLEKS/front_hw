@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
@@ -26,9 +26,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
   const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
   const chatBodyRef = useRef<HTMLDivElement>(null);
 
-  const { chats, activeChatId, setLoading, setActiveChat } = useChatStore();
+  const { chats, activeChatId, setLoading, setActiveChat, clearError } = useChatStore();
   const error = useChatStore((state) => state.error);
-  const clearError = () => useChatStore.setState({ error: null });
   const { sendChatMessage, stop } = useChatSender();
 
   const chat = chats.find((c) => c.id === chatId);
@@ -48,20 +47,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
     }
   }, [messages]);
 
-  const handleSend = async (content: string) => {
+  const handleSend = useCallback(async (content: string) => {
     if (!chatId) return;
     await sendChatMessage(chatId, content, attachedImages.length > 0 ? attachedImages : undefined);
     setAttachedImages([]);
-  };
+  }, [chatId, attachedImages, sendChatMessage]);
 
-  const handleAttachImage = (img: AttachedImage) => {
+  const handleAttachImage = useCallback((img: AttachedImage) => {
     setAttachedImages((prev) => [...prev, img]);
-  };
+  }, []);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     stop();
     setLoading(false);
-  };
+  }, [stop, setLoading]);
+
+  const handleClearError = useCallback(() => {
+    clearError();
+  }, [clearError]);
 
   if (!chat) {
     return <div className="chat-window">Чат не найден</div>;
@@ -71,7 +74,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
     <div className="chat-window">
       <div className="chat-header">
         <h2>{chat.name}</h2>
-        <button className="settings-button" onClick={() => setShowSettings(true)}>
+        <button className="settings-button" type="button" aria-label="Открыть настройки" onClick={() => setShowSettings(true)}>
           ⚙
         </button>
       </div>
@@ -85,7 +88,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chatId: propChatId }) => {
       {error && (
         <div className="send-error">
           <span>⚠️ {error}</span>
-          <button onClick={clearError} className="send-error__retry">Закрыть</button>
+          <button onClick={handleClearError} className="send-error__retry">Закрыть</button>
         </div>
       )}
 
