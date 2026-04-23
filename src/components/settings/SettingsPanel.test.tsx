@@ -1,9 +1,7 @@
-import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
-// Мокируем fetchModels чтобы не делать реальных запросов
 jest.mock('../../api/chatApi', () => ({
   fetchModels: jest.fn(() => Promise.resolve(['GigaChat', 'GigaChat-Plus', 'GigaChat-Pro', 'GigaChat-Max'])),
 }));

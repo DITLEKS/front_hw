@@ -33,7 +33,7 @@ const ChatList: React.FC<ChatListProps> = React.memo(({ chats, activeId, onSelec
       ))}
     </div>
   );
-};
+});
 
 ChatList.displayName = 'ChatList';
 

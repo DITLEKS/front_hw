@@ -1,5 +1,4 @@
-import { Chat, ChatState, ChatAction } from '../types/chat';
-import { Message } from '../types/message';
+import { ChatState, ChatAction } from '../types/chat';
 
 export const initialState: ChatState = {
   chats: [],

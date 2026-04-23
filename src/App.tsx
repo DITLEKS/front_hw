@@ -13,7 +13,7 @@ const App: React.FC = () => {
     }
   });
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => loadSettings().theme);
+  const [theme] = useState<'light' | 'dark'>(() => loadSettings().theme);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
