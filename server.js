@@ -77,16 +77,30 @@ app.post('/api/chat', async (req, res) => {
       throw new Error(`Chat failed: ${response.status} ${response.statusText}: ${errorText}`);
     }
 
-    const contentType = response.headers.get('content-type') || '';
-    res.status(response.status);
-    if (contentType) {
-      res.setHeader('Content-Type', contentType);
-    }
-
     if (req.body.stream === true && response.body) {
+      res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
       res.flushHeaders();
-      response.body.pipe(res);
+
+      response.body.on('data', (chunk) => {
+        res.write(chunk);
+      });
+
+      response.body.on('end', () => {
+        res.end();
+      });
+
+      response.body.on('error', (err) => {
+        console.error('Stream error:', err);
+        res.end();
+      });
+
+      req.on('close', () => {
+        response.body.destroy();
+      });
+
       return;
     }
 
@@ -163,7 +177,7 @@ app.get('/api/models', async (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', tokenValid: accessToken && Date.now() < tokenExpiresAt });
+  res.json({ status: 'ok', tokenValid: !!(accessToken && Date.now() < tokenExpiresAt) });
 });
 
 const PORT = process.env.PORT || 3002;
